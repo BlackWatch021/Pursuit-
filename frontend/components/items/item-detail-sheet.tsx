@@ -15,7 +15,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useActivities, useAddNote } from "@/hooks/use-activities";
-import { useDeleteItem, useItem, useMoveItem, useUpdateItem } from "@/hooks/use-items";
+import {
+  UpdateItemData,
+  useDeleteItem,
+  useItem,
+  useMoveItem,
+  useUpdateItem,
+} from "@/hooks/use-items";
 import {
   useCreateReminder,
   useDeleteReminder,
@@ -24,10 +30,33 @@ import {
 } from "@/hooks/use-reminders";
 import { sortedStages, stageMap } from "@/lib/board-utils";
 import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
-import type { Activity, Board, Priority } from "@/lib/types";
+import type { Activity, Board, Item, Priority } from "@/lib/types";
 import { ArrowRight, Bell, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+
+const isoDateOnly = (d: string) => new Date(d).toISOString().slice(0, 10);
+
+interface FormState {
+  title: string;
+  primaryDate: string;
+  tags: string;
+  fieldVals: Record<string, string>;
+}
+
+function formStateFor(item: Item, board: Board): FormState {
+  const fieldVals: Record<string, string> = {};
+  for (const f of board.customFields) {
+    const v = item.fields?.[f.id];
+    fieldVals[f.id] = v == null ? "" : String(v);
+  }
+  return {
+    title: item.title,
+    primaryDate: isoDateOnly(item.primaryDate),
+    tags: item.tags.join(", "),
+    fieldVals,
+  };
+}
 
 export function ItemDetailSheet({
   itemId,
@@ -41,7 +70,17 @@ export function ItemDetailSheet({
   onOpenChange: (o: boolean) => void;
 }) {
   const { data, isLoading } = useItem(itemId);
-  const item = data?.item;
+  const freshItem = data?.item;
+  // Cache the last loaded item so the drawer doesn't flash a blue skeleton
+  // during its close animation (when itemId becomes null and the fetch stops).
+  const [item, setItem] = useState<Item | null>(null);
+  useEffect(() => {
+    if (freshItem) setItem(freshItem);
+  }, [freshItem]);
+  useEffect(() => {
+    // Switching to a different item: clear the cache so the new one loads fresh.
+    if (open && itemId && item && item._id !== itemId) setItem(null);
+  }, [open, itemId, item]);
   const update = useUpdateItem();
   const move = useMoveItem();
   const del = useDeleteItem();
@@ -49,37 +88,64 @@ export function ItemDetailSheet({
   const stages = sortedStages(board);
   const stageNames = stageMap(board);
 
-  const [title, setTitle] = useState("");
-  const [tags, setTags] = useState("");
-  const [fieldVals, setFieldVals] = useState<Record<string, string>>({});
+  const [form, setForm] = useState<FormState>({
+    title: "",
+    primaryDate: "",
+    tags: "",
+    fieldVals: {},
+  });
 
+  // Reset the form whenever the loaded item changes (different card, or saved
+  // updates streamed back from the server).
   useEffect(() => {
-    if (item) {
-      setTitle(item.title);
-      setTags(item.tags.join(", "));
-      const fv: Record<string, string> = {};
-      for (const f of board.customFields) {
-        const v = item.fields?.[f.id];
-        fv[f.id] = v == null ? "" : String(v);
-      }
-      setFieldVals(fv);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [item?._id]);
+    if (item) setForm(formStateFor(item, board));
+  }, [item, board]);
 
-  function saveTitle() {
-    if (item && title.trim() && title.trim() !== item.title) {
-      update.mutate({ id: item._id, data: { title: title.trim() } });
+  const isDirty = useMemo(() => {
+    if (!item) return false;
+    const baseline = formStateFor(item, board);
+    if (form.title.trim() !== baseline.title) return true;
+    if (form.primaryDate !== baseline.primaryDate) return true;
+    if (form.tags !== baseline.tags) return true;
+    for (const f of board.customFields) {
+      if ((form.fieldVals[f.id] ?? "") !== (baseline.fieldVals[f.id] ?? "")) return true;
+    }
+    return false;
+  }, [item, board, form]);
+
+  async function saveAll() {
+    if (!item || !isDirty) return;
+    const baseline = formStateFor(item, board);
+    const data: UpdateItemData = {};
+
+    if (form.title.trim() && form.title.trim() !== baseline.title) data.title = form.title.trim();
+    if (form.primaryDate !== baseline.primaryDate) {
+      data.primaryDate = new Date(form.primaryDate).toISOString();
+    }
+    if (form.tags !== baseline.tags) {
+      data.tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
+    }
+    const changedFields: Record<string, unknown> = {};
+    for (const f of board.customFields) {
+      const localV = form.fieldVals[f.id] ?? "";
+      const baseV = baseline.fieldVals[f.id] ?? "";
+      if (localV !== baseV) changedFields[f.id] = localV;
+    }
+    if (Object.keys(changedFields).length > 0) data.fields = changedFields;
+
+    try {
+      await update.mutateAsync({ id: item._id, data });
+      toast.success("Changes saved");
+      onOpenChange(false);
+    } catch {
+      toast.error("Couldn't save changes");
     }
   }
-  function saveTags() {
-    if (!item) return;
-    const next = tags.split(",").map((t) => t.trim()).filter(Boolean);
-    update.mutate({ id: item._id, data: { tags: next } });
+
+  function discardChanges() {
+    if (item) setForm(formStateFor(item, board));
   }
-  function saveField(fieldId: string) {
-    if (item) update.mutate({ id: item._id, data: { fields: { [fieldId]: fieldVals[fieldId] } } });
-  }
+
   async function onDelete() {
     if (!item) return;
     await del.mutateAsync(item._id);
@@ -87,30 +153,47 @@ export function ItemDetailSheet({
     onOpenChange(false);
   }
 
+  function handleOpenChange(next: boolean) {
+    if (!next && isDirty) {
+      const ok = window.confirm("You have unsaved changes. Discard them?");
+      if (!ok) return;
+    }
+    onOpenChange(next);
+  }
+
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-xl">
-        {isLoading || !item ? (
-          <div className="space-y-4 p-6">
+        {!item ? (
+          // Only show skeletons during a genuine fresh open. When the drawer
+          // is closing (open=false) we render just the a11y title to keep the
+          // exit animation clean — no blue skeleton flash.
+          isLoading && open ? (
+            <div className="space-y-4 p-6">
+              <SheetTitle className="sr-only">Application details</SheetTitle>
+              <Skeleton className="h-7 w-2/3" />
+              <Skeleton className="h-9 w-full" />
+              <Skeleton className="h-40 w-full" />
+            </div>
+          ) : (
             <SheetTitle className="sr-only">Application details</SheetTitle>
-            <Skeleton className="h-7 w-2/3" />
-            <Skeleton className="h-9 w-full" />
-            <Skeleton className="h-40 w-full" />
-          </div>
+          )
         ) : (
           <>
             {/* Header */}
             <div className="space-y-3 border-b p-5">
               <SheetTitle asChild>
                 <input
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onBlur={saveTitle}
+                  value={form.title}
+                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
                   className="w-full bg-transparent text-xl font-semibold tracking-tight outline-none focus:border-b focus:border-border"
                 />
               </SheetTitle>
               <div className="flex flex-wrap items-center gap-2">
-                <Select value={item.stageId} onValueChange={(v) => move.mutate({ id: item._id, stageId: v })}>
+                <Select
+                  value={item.stageId}
+                  onValueChange={(v) => move.mutate({ id: item._id, stageId: v })}
+                >
                   <SelectTrigger className="h-8 w-auto gap-2">
                     <span
                       className="h-2.5 w-2.5 rounded-full"
@@ -129,7 +212,9 @@ export function ItemDetailSheet({
 
                 <Select
                   value={item.priority}
-                  onValueChange={(v) => update.mutate({ id: item._id, data: { priority: v as Priority } })}
+                  onValueChange={(v) =>
+                    update.mutate({ id: item._id, data: { priority: v as Priority } })
+                  }
                 >
                   <SelectTrigger className="h-8 w-auto">
                     <SelectValue />
@@ -157,13 +242,8 @@ export function ItemDetailSheet({
                     <Label className="text-xs text-muted-foreground">Applied date</Label>
                     <Input
                       type="date"
-                      defaultValue={new Date(item.primaryDate).toISOString().slice(0, 10)}
-                      onChange={(e) =>
-                        update.mutate({
-                          id: item._id,
-                          data: { primaryDate: new Date(e.target.value).toISOString() },
-                        })
-                      }
+                      value={form.primaryDate}
+                      onChange={(e) => setForm((p) => ({ ...p, primaryDate: e.target.value }))}
                       className="h-9"
                     />
                   </div>
@@ -174,11 +254,10 @@ export function ItemDetailSheet({
                         <Label className="text-xs text-muted-foreground">{f.name}</Label>
                         {f.type === "select" && f.options ? (
                           <Select
-                            value={fieldVals[f.id] || ""}
-                            onValueChange={(v) => {
-                              setFieldVals((p) => ({ ...p, [f.id]: v }));
-                              update.mutate({ id: item._id, data: { fields: { [f.id]: v } } });
-                            }}
+                            value={form.fieldVals[f.id] || ""}
+                            onValueChange={(v) =>
+                              setForm((p) => ({ ...p, fieldVals: { ...p.fieldVals, [f.id]: v } }))
+                            }
                           >
                             <SelectTrigger className="h-9">
                               <SelectValue placeholder="—" />
@@ -195,9 +274,13 @@ export function ItemDetailSheet({
                           <Input
                             className="h-9"
                             type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
-                            value={fieldVals[f.id] ?? ""}
-                            onChange={(e) => setFieldVals((p) => ({ ...p, [f.id]: e.target.value }))}
-                            onBlur={() => saveField(f.id)}
+                            value={form.fieldVals[f.id] ?? ""}
+                            onChange={(e) =>
+                              setForm((p) => ({
+                                ...p,
+                                fieldVals: { ...p.fieldVals, [f.id]: e.target.value },
+                              }))
+                            }
                             placeholder="—"
                           />
                         )}
@@ -209,9 +292,8 @@ export function ItemDetailSheet({
                     <Label className="text-xs text-muted-foreground">Tags</Label>
                     <Input
                       className="h-9"
-                      value={tags}
-                      onChange={(e) => setTags(e.target.value)}
-                      onBlur={saveTags}
+                      value={form.tags}
+                      onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))}
                       placeholder="comma, separated"
                     />
                   </div>
@@ -228,12 +310,37 @@ export function ItemDetailSheet({
             </Tabs>
 
             {/* Footer */}
-            <div className="flex items-center justify-between border-t p-4 text-xs text-muted-foreground">
-              <span>Added {fmtDate(item.createdAt)}</span>
-              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={onDelete}>
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Delete
-              </Button>
+            <div className="flex items-center justify-between gap-3 border-t bg-card/80 p-4 backdrop-blur">
+              {isDirty ? (
+                <>
+                  <span className="text-xs font-medium text-amber-600 dark:text-amber-400">
+                    Unsaved changes
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={discardChanges} disabled={update.isPending}>
+                      Discard
+                    </Button>
+                    <Button size="sm" onClick={saveAll} disabled={update.isPending}>
+                      {update.isPending ? "Saving…" : "Save changes"}
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-xs text-muted-foreground">
+                    Added {fmtDate(item.createdAt)}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={onDelete}
+                  >
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Delete
+                  </Button>
+                </>
+              )}
             </div>
           </>
         )}
@@ -279,7 +386,6 @@ function ActivityRow({ a, board }: { a: Activity; board: Board }) {
     );
   }
 
-  // created
   return (
     <li className="flex gap-3">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary">
