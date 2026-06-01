@@ -30,7 +30,7 @@ export function MonthView({
 }) {
   const eventsByDay = new Map<string, CalendarEvent[]>();
   for (const e of events) {
-    const key = new Date(e.date).toISOString().slice(0, 10);
+    const key = e.date.slice(0, 10);
     if (!eventsByDay.has(key)) eventsByDay.set(key, []);
     eventsByDay.get(key)!.push(e);
   }
