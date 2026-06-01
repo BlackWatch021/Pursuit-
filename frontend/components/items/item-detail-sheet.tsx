@@ -29,13 +29,15 @@ import {
   useUpdateReminder,
 } from "@/hooks/use-reminders";
 import { sortedStages, stageMap } from "@/lib/board-utils";
-import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
+import { dateOnlyToISO, fmtDate, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Board, Item, Priority } from "@/lib/types";
 import { ArrowRight, Bell, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
-const isoDateOnly = (d: string) => new Date(d).toISOString().slice(0, 10);
+// Backend stores dates as ISO strings; extract YYYY-MM-DD without going
+// through `new Date` so we never touch local time.
+const isoDateOnly = (d: string) => d.slice(0, 10);
 
 interface FormState {
   title: string;
@@ -120,7 +122,7 @@ export function ItemDetailSheet({
 
     if (form.title.trim() && form.title.trim() !== baseline.title) data.title = form.title.trim();
     if (form.primaryDate !== baseline.primaryDate) {
-      data.primaryDate = new Date(form.primaryDate).toISOString();
+      data.primaryDate = dateOnlyToISO(form.primaryDate);
     }
     if (form.tags !== baseline.tags) {
       data.tags = form.tags.split(",").map((t) => t.trim()).filter(Boolean);
@@ -452,7 +454,7 @@ function RemindersTab({ itemId }: { itemId: string }) {
       toast.error("Pick a due date");
       return;
     }
-    await create.mutateAsync({ itemId, dueDate: new Date(due).toISOString(), note });
+    await create.mutateAsync({ itemId, dueDate: dateOnlyToISO(due), note });
     setDue("");
     setNote("");
   }

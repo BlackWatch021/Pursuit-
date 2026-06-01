@@ -21,12 +21,11 @@ import {
 import { useCreateItem } from "@/hooks/use-items";
 import { ApiError } from "@/lib/api";
 import { sortedStages } from "@/lib/board-utils";
+import { dateOnlyToISO, todayDateOnly } from "@/lib/format";
 import type { Board, Priority } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-
-const todayISO = () => new Date().toISOString().slice(0, 10);
 
 export function NewItemDialog({
   board,
@@ -44,7 +43,7 @@ export function NewItemDialog({
 
   const [title, setTitle] = useState("");
   const [stageId, setStageId] = useState(defaultStageId || stages[0]?.id || "");
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(todayDateOnly());
   const [priority, setPriority] = useState<Priority>("medium");
   const [fields, setFields] = useState<Record<string, string>>({});
   const [tags, setTags] = useState("");
@@ -53,7 +52,7 @@ export function NewItemDialog({
     if (open) {
       setTitle("");
       setStageId(defaultStageId || stages[0]?.id || "");
-      setDate(todayISO());
+      setDate(todayDateOnly());
       setPriority("medium");
       setFields({});
       setTags("");
@@ -77,7 +76,7 @@ export function NewItemDialog({
         boardId: board._id,
         title: title.trim(),
         stageId,
-        primaryDate: new Date(date).toISOString(),
+        primaryDate: dateOnlyToISO(date),
         priority,
         fields: fieldValues,
         tags: tags
