@@ -37,6 +37,7 @@ export function KanbanBoard({
   const stages = useMemo(() => sortedStages(board), [board]);
   const reorder = useReorderItems();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [dragColor, setDragColor] = useState<string | undefined>(undefined);
 
   const group = useMemo(
     () =>
@@ -94,7 +95,9 @@ export function KanbanBoard({
     : null;
 
   function onDragStart(e: DragStartEvent) {
-    setActiveId(String(e.active.id));
+    const id = String(e.active.id);
+    setActiveId(id);
+    setDragColor(stages.find((s) => s.id === findContainer(id))?.color);
   }
 
   function onDragOver(e: DragOverEvent) {
@@ -104,7 +107,9 @@ export function KanbanBoard({
     const overKey = String(over.id);
     const from = findContainer(activeKey);
     const to = findContainer(overKey);
-    if (!from || !to || from === to) return;
+    if (!from || !to) return;
+    setDragColor(stages.find((s) => s.id === to)?.color);
+    if (from === to) return;
 
     const current = columnsRef.current;
     const fromItems = current[from];
@@ -140,6 +145,7 @@ export function KanbanBoard({
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     setActiveId(null);
+    setDragColor(undefined);
     if (!over) return;
 
     const activeKey = String(active.id);
@@ -170,8 +176,12 @@ export function KanbanBoard({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
+      onDragCancel={() => {
+        setActiveId(null);
+        setDragColor(undefined);
+      }}
     >
-      <div className="scrollbar-thin flex h-full gap-4 overflow-auto p-4 sm:px-6">
+      <div className="board-surface scrollbar-thin flex h-full items-start gap-4 overflow-auto p-4 sm:px-6">
         {stages.map((stage) => {
           const colItems = columns[stage.id] ?? [];
           return (
@@ -196,7 +206,9 @@ export function KanbanBoard({
       </div>
 
       <DragOverlay>
-        {activeItem ? <BoardCardView item={activeItem} board={board} dragging /> : null}
+        {activeItem ? (
+          <BoardCardView item={activeItem} board={board} dragging dragColor={dragColor} />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );

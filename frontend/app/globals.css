@@ -117,4 +117,13 @@
     background-color: var(--border);
     border-radius: 9999px;
   }
+
+  /* Faint dot-grid texture for the board background (theme-aware). */
+  .board-surface {
+    background-image: radial-gradient(
+      color-mix(in oklab, var(--foreground) 11%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 18px 18px;
+  }
 }

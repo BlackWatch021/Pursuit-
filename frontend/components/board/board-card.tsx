@@ -14,11 +14,12 @@ type ViewProps = {
   item: Item;
   board: Board;
   dragging?: boolean;
+  dragColor?: string;
 } & React.HTMLAttributes<HTMLDivElement>;
 
 /** Pure visual card — used inside the sortable wrapper and in the drag overlay. */
 export const BoardCardView = forwardRef<HTMLDivElement, ViewProps>(function BoardCardView(
-  { item, board, dragging, className, ...rest },
+  { item, board, dragging, dragColor, className, style, ...rest },
   ref,
 ) {
   const role = getField(item, board, "Role");
@@ -28,9 +29,10 @@ export const BoardCardView = forwardRef<HTMLDivElement, ViewProps>(function Boar
   return (
     <div
       ref={ref}
+      style={{ ...style, ...(dragging && dragColor ? { borderColor: dragColor } : {}) }}
       className={cn(
         "group cursor-pointer touch-none select-none rounded-lg border bg-card p-3 shadow-sm transition-colors hover:border-primary/40",
-        dragging && "rotate-1 shadow-lg ring-2 ring-primary/30",
+        dragging && "rotate-1 border-2 shadow-lg",
         className,
       )}
       {...rest}
