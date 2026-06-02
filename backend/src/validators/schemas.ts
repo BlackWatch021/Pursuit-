@@ -71,6 +71,16 @@ export const moveItemSchema = z.object({
   order: z.number().optional(),
 });
 
+export const reorderItemsSchema = z.object({
+  updates: z.array(
+    z.object({
+      id: z.string(),
+      stageId: z.string(),
+      order: z.number(),
+    }),
+  ),
+});
+
 export const createNoteSchema = z.object({
   content: z.string().min(1),
 });

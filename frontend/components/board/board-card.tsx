@@ -1,54 +1,44 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { useDraggable } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 import { getField } from "@/lib/board-utils";
 import { fmtDateShort } from "@/lib/format";
 import type { Board, Item } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { Banknote, MapPin } from "lucide-react";
+import { forwardRef } from "react";
 
-export function BoardCard({
-  item,
-  board,
-  onClick,
-  dragging,
-}: {
+type ViewProps = {
   item: Item;
   board: Board;
-  onClick?: () => void;
   dragging?: boolean;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: item._id,
-  });
-  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+} & React.HTMLAttributes<HTMLDivElement>;
 
+/** Pure visual card — used inside the sortable wrapper and in the drag overlay. */
+export const BoardCardView = forwardRef<HTMLDivElement, ViewProps>(function BoardCardView(
+  { item, board, dragging, className, ...rest },
+  ref,
+) {
   const role = getField(item, board, "Role");
   const location = getField(item, board, "Location");
   const salary = getField(item, board, "Salary");
 
   return (
     <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onClick={onClick}
+      ref={ref}
       className={cn(
         "group cursor-pointer touch-none select-none rounded-lg border bg-card p-3 shadow-sm transition-colors hover:border-primary/40",
-        isDragging && "opacity-40",
         dragging && "rotate-1 shadow-lg ring-2 ring-primary/30",
+        className,
       )}
+      {...rest}
     >
       <div className="flex items-start justify-between gap-2">
         <p className="font-medium leading-tight">{item.title}</p>
         {item.priority === "high" && (
-          <span
-            className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500"
-            title="High priority"
-          />
+          <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-amber-500" title="High priority" />
         )}
       </div>
       {role && <p className="mt-0.5 text-sm text-muted-foreground">{role}</p>}
@@ -82,5 +72,37 @@ export function BoardCard({
 
       <div className="mt-2 text-[11px] text-muted-foreground">{fmtDateShort(item.primaryDate)}</div>
     </div>
+  );
+});
+
+/** Sortable, draggable card rendered inside a column's SortableContext. */
+export function BoardCard({
+  item,
+  board,
+  onClick,
+  disabled,
+}: {
+  item: Item;
+  board: Board;
+  onClick?: () => void;
+  disabled?: boolean;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: item._id,
+    disabled,
+  });
+  const style = { transform: CSS.Translate.toString(transform), transition };
+
+  return (
+    <BoardCardView
+      ref={setNodeRef}
+      item={item}
+      board={board}
+      onClick={onClick}
+      style={style}
+      className={cn(isDragging && "opacity-40")}
+      {...attributes}
+      {...listeners}
+    />
   );
 }

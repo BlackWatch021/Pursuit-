@@ -9,6 +9,7 @@ import {
   createItemSchema,
   createNoteSchema,
   moveItemSchema,
+  reorderItemsSchema,
   updateItemSchema,
 } from '../validators/schemas';
 
@@ -27,6 +28,33 @@ router.get(
 
     const items = await Item.find(query).sort({ stageId: 1, order: 1, createdAt: -1 });
     res.json({ items });
+  }),
+);
+
+// Bulk reorder / cross-stage move from drag-and-drop. Each update carries the
+// item's new stageId + order; a stage change is logged to the activity timeline.
+// Declared before '/:id' so the literal path isn't captured as an id.
+router.patch(
+  '/reorder',
+  asyncHandler(async (req, res) => {
+    const { updates } = reorderItemsSchema.parse(req.body);
+    for (const u of updates) {
+      const item = await Item.findOne({ _id: u.id, userId: req.userId });
+      if (!item) continue;
+      if (item.stageId !== u.stageId) {
+        await Activity.create({
+          itemId: item._id,
+          userId: req.userId,
+          type: 'stage_change',
+          fromStageId: item.stageId,
+          toStageId: u.stageId,
+        });
+        item.stageId = u.stageId;
+      }
+      item.order = u.order;
+      await item.save();
+    }
+    res.json({ ok: true });
   }),
 );
 

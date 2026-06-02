@@ -101,29 +101,37 @@ export default function BoardPage() {
         activeCount={activeCount}
       />
 
-      <div className="min-h-0 flex-1">
-        {itemsLoading ? (
-          <div className="flex h-full items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : activeCount > 0 && filtered.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-            <p className="text-sm text-muted-foreground">No applications match your filters.</p>
-            <Button variant="outline" size="sm" onClick={clearFilters}>
-              Clear filters
-            </Button>
-          </div>
-        ) : (
-          <KanbanBoard
-            board={board}
-            items={filtered}
-            onCardClick={setSelectedId}
-            onAddInStage={(stageId) => {
-              setDefaultStage(stageId);
-              setNewOpen(true);
-            }}
-          />
+      <div className="flex min-h-0 flex-1 flex-col">
+        {activeCount > 0 && filtered.length > 0 && (
+          <p className="px-4 pt-2 text-xs text-muted-foreground sm:px-6">
+            Reordering is paused while filters are active — clear filters to rearrange cards.
+          </p>
         )}
+        <div className="min-h-0 flex-1">
+          {itemsLoading ? (
+            <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : activeCount > 0 && filtered.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <p className="text-sm text-muted-foreground">No applications match your filters.</p>
+              <Button variant="outline" size="sm" onClick={clearFilters}>
+                Clear filters
+              </Button>
+            </div>
+          ) : (
+            <KanbanBoard
+              board={board}
+              items={filtered}
+              onCardClick={setSelectedId}
+              onAddInStage={(stageId) => {
+                setDefaultStage(stageId);
+                setNewOpen(true);
+              }}
+              dndDisabled={activeCount > 0}
+            />
+          )}
+        </div>
       </div>
 
       <NewItemDialog
