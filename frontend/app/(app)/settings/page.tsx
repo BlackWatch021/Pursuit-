@@ -13,13 +13,16 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ConfirmDialog } from "@/components/confirm-dialog";
+import { DeleteStageDialog } from "@/components/settings/delete-stage-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards, useUpdateBoard } from "@/hooks/use-boards";
+import { useItems } from "@/hooks/use-items";
 import { FIELD_TYPE_VALUES } from "@/lib/constants";
 import type { Board, CustomField, FieldType, Stage } from "@/lib/types";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function ProfileSection() {
@@ -73,6 +76,57 @@ function BoardSection({ board }: { board: Board }) {
     setFields(board.customFields.map((f) => ({ ...f })));
   }, [board]);
 
+  const { data: itemsData } = useItems(board._id);
+  const countByStage = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const it of itemsData?.items ?? []) m[it.stageId] = (m[it.stageId] ?? 0) + 1;
+    return m;
+  }, [itemsData]);
+  const [deletingStage, setDeletingStage] = useState<Stage | null>(null);
+  const [deletingField, setDeletingField] = useState<CustomField | null>(null);
+
+  // Only enable Save when the local edits actually differ from the saved board.
+  const stagesDirty = useMemo(() => {
+    if (stages.length !== board.stages.length) return true;
+    return stages.some((s, i) => {
+      const b = board.stages[i];
+      return !b || s.id !== b.id || s.name !== b.name || s.color !== b.color;
+    });
+  }, [stages, board.stages]);
+
+  const fieldsDirty = useMemo(() => {
+    if (fields.length !== board.customFields.length) return true;
+    return fields.some((f, i) => {
+      const b = board.customFields[i];
+      if (!b || f.id !== b.id || f.name !== b.name || f.type !== b.type) return true;
+      return (f.options ?? []).join("") !== (b.options ?? []).join("");
+    });
+  }, [fields, board.customFields]);
+
+  function requestDeleteField(field: CustomField) {
+    const persisted = board.customFields.some((x) => x.id === field.id);
+    if (!persisted) {
+      // Unsaved new field — just drop it locally, no confirmation needed.
+      setFields((p) => p.filter((x) => x.id !== field.id));
+      return;
+    }
+    setDeletingField(field);
+  }
+
+  function requestDeleteStage(stage: Stage) {
+    const persisted = board.stages.some((s) => s.id === stage.id);
+    if (!persisted) {
+      // A brand-new stage that hasn't been saved yet — just drop it locally.
+      setStages((p) => p.filter((x) => x.id !== stage.id));
+      return;
+    }
+    if (board.stages.length <= 1) {
+      toast.error("A board needs at least one stage");
+      return;
+    }
+    setDeletingStage(stage);
+  }
+
   function move(i: number, dir: -1 | 1) {
     const j = i + dir;
     if (j < 0 || j >= stages.length) return;
@@ -100,7 +154,7 @@ function BoardSection({ board }: { board: Board }) {
             <h2 className="text-sm font-medium">Stages</h2>
             <p className="text-xs text-muted-foreground">The columns on your board.</p>
           </div>
-          <Button size="sm" onClick={saveStages} disabled={update.isPending}>
+          <Button size="sm" onClick={saveStages} disabled={update.isPending || !stagesDirty}>
             Save
           </Button>
         </div>
@@ -133,7 +187,7 @@ function BoardSection({ board }: { board: Board }) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground"
-                onClick={() => setStages((p) => p.filter((x) => x.id !== s.id))}
+                onClick={() => requestDeleteStage(s)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -162,7 +216,7 @@ function BoardSection({ board }: { board: Board }) {
             <h2 className="text-sm font-medium">Custom fields</h2>
             <p className="text-xs text-muted-foreground">Extra details tracked per application.</p>
           </div>
-          <Button size="sm" onClick={saveFields} disabled={update.isPending}>
+          <Button size="sm" onClick={saveFields} disabled={update.isPending || !fieldsDirty}>
             Save
           </Button>
         </div>
@@ -197,7 +251,7 @@ function BoardSection({ board }: { board: Board }) {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 text-muted-foreground"
-                onClick={() => setFields((p) => p.filter((x) => x.id !== f.id))}
+                onClick={() => requestDeleteField(f)}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>
@@ -215,6 +269,30 @@ function BoardSection({ board }: { board: Board }) {
           Add field
         </Button>
       </div>
+
+      <DeleteStageDialog
+        board={board}
+        stage={deletingStage}
+        count={deletingStage ? (countByStage[deletingStage.id] ?? 0) : 0}
+        open={!!deletingStage}
+        onOpenChange={(o) => {
+          if (!o) setDeletingStage(null);
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!deletingField}
+        onOpenChange={(o) => {
+          if (!o) setDeletingField(null);
+        }}
+        title={deletingField ? `Delete “${deletingField.name}”?` : "Delete field"}
+        description="This field is removed from your board. Saved values stay in the database but are hidden from your applications — click Save to apply."
+        confirmLabel="Remove field"
+        destructive
+        onConfirm={() => {
+          if (deletingField) setFields((p) => p.filter((x) => x.id !== deletingField.id));
+        }}
+      />
     </div>
   );
 }
