@@ -1,19 +1,20 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useDroppable } from "@dnd-kit/core";
 import type { Stage } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useDroppable } from "@dnd-kit/core";
+import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
 
 export function BoardColumn({
   stage,
-  count,
+  itemIds,
   onAdd,
   children,
 }: {
   stage: Stage;
-  count: number;
+  itemIds: string[];
   onAdd: () => void;
   children: React.ReactNode;
 }) {
@@ -25,7 +26,9 @@ export function BoardColumn({
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
           <span className="text-sm font-medium">{stage.name}</span>
-          <span className="rounded bg-muted px-1.5 text-xs text-muted-foreground">{count}</span>
+          <span className="rounded bg-muted px-1.5 text-xs text-muted-foreground">
+            {itemIds.length}
+          </span>
         </div>
         <Button
           variant="ghost"
@@ -45,12 +48,14 @@ export function BoardColumn({
           isOver && "border-primary/40 bg-accent/40",
         )}
       >
-        {children}
-        {count === 0 && (
-          <div className="rounded-md py-8 text-center text-xs text-muted-foreground/70">
-            No applications
-          </div>
-        )}
+        <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+          {children}
+          {itemIds.length === 0 && (
+            <div className="rounded-md py-8 text-center text-xs text-muted-foreground/70">
+              No applications
+            </div>
+          )}
+        </SortableContext>
       </div>
     </div>
   );

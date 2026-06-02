@@ -86,6 +86,19 @@ export function useMoveItem() {
   });
 }
 
+export function useReorderItems() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (updates: { id: string; stageId: string; order: number }[]) =>
+      api.patch<{ ok: true }>("/api/items/reorder", { updates }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
+      qc.invalidateQueries({ queryKey: ["dashboard"] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
+    },
+  });
+}
+
 export function useDeleteItem() {
   const qc = useQueryClient();
   return useMutation({
