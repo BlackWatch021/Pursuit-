@@ -41,6 +41,12 @@ export const updateBoardSchema = z.object({
   customFields: z.array(fieldInput).optional(),
 });
 
+export const deleteStageSchema = z.object({
+  // 'move' reassigns the stage's items to targetStageId; 'delete' removes them.
+  strategy: z.enum(['move', 'delete']),
+  targetStageId: z.string().optional(),
+});
+
 export const createItemSchema = z.object({
   boardId: z.string(),
   title: z.string().min(1),
