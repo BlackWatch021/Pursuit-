@@ -45,7 +45,8 @@ export function KanbanBoard({
         const map: Columns = {};
         for (const s of stages) map[s.id] = [];
         for (const it of list) (map[it.stageId] ??= []).push(it);
-        for (const k of Object.keys(map)) map[k] = [...map[k]].sort((a, b) => a.order - b.order);
+        for (const k of Object.keys(map))
+          map[k] = [...map[k]].sort((a, b) => a.order - b.order);
         return map;
       },
     [stages],
@@ -63,7 +64,10 @@ export function KanbanBoard({
   // Reset the local arrangement when the server data (or board) changes. Tracked in
   // state (not a ref) and applied at render time — avoids both the effect-cascade
   // and the render-time ref-access warnings.
-  const [synced, setSynced] = useState<{ items: Item[]; group: (l: Item[]) => Columns }>({
+  const [synced, setSynced] = useState<{
+    items: Item[];
+    group: (l: Item[]) => Columns;
+  }>({
     items,
     group,
   });
@@ -80,7 +84,9 @@ export function KanbanBoard({
     setColumns(next);
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   function findContainer(id: string): string | undefined {
     const cols = columnsRef.current;
@@ -89,9 +95,9 @@ export function KanbanBoard({
   }
 
   const activeItem = activeId
-    ? Object.values(columns)
+    ? (Object.values(columns)
         .flat()
-        .find((it) => it._id === activeId) ?? null
+        .find((it) => it._id === activeId) ?? null)
     : null;
 
   function onDragStart(e: DragStartEvent) {
@@ -123,7 +129,11 @@ export function KanbanBoard({
     setCols({
       ...current,
       [from]: fromItems.filter((i) => i._id !== activeKey),
-      [to]: [...toItems.slice(0, overIndex), { ...moved, stageId: to }, ...toItems.slice(overIndex)],
+      [to]: [
+        ...toItems.slice(0, overIndex),
+        { ...moved, stageId: to },
+        ...toItems.slice(overIndex),
+      ],
     });
   }
 
@@ -207,7 +217,12 @@ export function KanbanBoard({
 
       <DragOverlay>
         {activeItem ? (
-          <BoardCardView item={activeItem} board={board} dragging dragColor={dragColor} />
+          <BoardCardView
+            item={activeItem}
+            board={board}
+            dragging
+            dragColor={dragColor}
+          />
         ) : null}
       </DragOverlay>
     </DndContext>
