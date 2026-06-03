@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { MultiSelect } from "@/components/multi-select";
 import { useCreateItem } from "@/hooks/use-items";
 import { ApiError } from "@/lib/api";
 import { sortedStages } from "@/lib/board-utils";
@@ -45,7 +46,7 @@ export function NewItemDialog({
   const [stageId, setStageId] = useState(defaultStageId || stages[0]?.id || "");
   const [date, setDate] = useState(todayDateOnly());
   const [priority, setPriority] = useState<Priority>("medium");
-  const [fields, setFields] = useState<Record<string, string>>({});
+  const [fields, setFields] = useState<Record<string, string | string[]>>({});
   const [tags, setTags] = useState("");
 
   useEffect(() => {
@@ -69,7 +70,11 @@ export function NewItemDialog({
     const fieldValues: Record<string, unknown> = {};
     for (const f of board.customFields) {
       const v = fields[f.id];
-      if (v != null && v !== "") fieldValues[f.id] = v;
+      if (Array.isArray(v)) {
+        if (v.length > 0) fieldValues[f.id] = v;
+      } else if (v != null && v !== "") {
+        fieldValues[f.id] = v;
+      }
     }
     try {
       await create.mutateAsync({
@@ -134,35 +139,45 @@ export function NewItemDialog({
           </div>
 
           <div className="grid grid-cols-2 gap-3">
-            {board.customFields.map((f) => (
-              <div key={f.id} className={cn("space-y-2", f.type === "url" && "col-span-2")}>
-                <Label>{f.name}</Label>
-                {f.type === "select" && f.options ? (
-                  <Select
-                    value={fields[f.id] ?? ""}
-                    onValueChange={(v) => setFields((p) => ({ ...p, [f.id]: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {f.options.map((o) => (
-                        <SelectItem key={o} value={o}>
-                          {o}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <Input
-                    type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
-                    value={fields[f.id] ?? ""}
-                    onChange={(e) => setFields((p) => ({ ...p, [f.id]: e.target.value }))}
-                    placeholder={f.type === "url" ? "https://…" : ""}
-                  />
-                )}
-              </div>
-            ))}
+            {board.customFields.map((f) => {
+              const opts = (f.options ?? []).filter(Boolean);
+              const wide = f.type === "url" || f.type === "multiselect";
+              return (
+                <div key={f.id} className={cn("space-y-2", wide && "col-span-2")}>
+                  <Label>{f.name}</Label>
+                  {f.type === "select" ? (
+                    <Select
+                      value={(fields[f.id] as string) ?? ""}
+                      onValueChange={(v) => setFields((p) => ({ ...p, [f.id]: v }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={opts.length ? "Select" : "Add options in Settings"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {opts.map((o) => (
+                          <SelectItem key={o} value={o}>
+                            {o}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : f.type === "multiselect" ? (
+                    <MultiSelect
+                      options={opts}
+                      value={Array.isArray(fields[f.id]) ? (fields[f.id] as string[]) : []}
+                      onChange={(next) => setFields((p) => ({ ...p, [f.id]: next }))}
+                    />
+                  ) : (
+                    <Input
+                      type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                      value={(fields[f.id] as string) ?? ""}
+                      onChange={(e) => setFields((p) => ({ ...p, [f.id]: e.target.value }))}
+                      placeholder={f.type === "url" ? "https://…" : ""}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           <div className="grid grid-cols-2 gap-3">

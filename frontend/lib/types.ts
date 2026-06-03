@@ -8,7 +8,14 @@ export interface User {
   updatedAt: string;
 }
 
-export type FieldType = "text" | "number" | "date" | "select" | "url" | "currency";
+export type FieldType =
+  | "text"
+  | "number"
+  | "date"
+  | "select"
+  | "multiselect"
+  | "url"
+  | "currency";
 
 export interface Stage {
   id: string;

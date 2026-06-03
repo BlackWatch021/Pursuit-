@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { MultiSelect } from "@/components/multi-select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,21 +40,40 @@ import { toast } from "sonner";
 // through `new Date` so we never touch local time.
 const isoDateOnly = (d: string) => d.slice(0, 10);
 
+// A custom-field value is a string for most types, or a string[] for multiselect.
+type FieldVal = string | string[];
+
+// Equality that handles both string and array field values.
+function sameVal(a: FieldVal | undefined, b: FieldVal | undefined): boolean {
+  if (Array.isArray(a) || Array.isArray(b)) {
+    return JSON.stringify(a ?? []) === JSON.stringify(b ?? []);
+  }
+  return (a ?? "") === (b ?? "");
+}
+
 interface FormState {
   title: string;
+  stageId: string;
+  priority: Priority;
   primaryDate: string;
   tags: string;
-  fieldVals: Record<string, string>;
+  fieldVals: Record<string, FieldVal>;
 }
 
 function formStateFor(item: Item, board: Board): FormState {
-  const fieldVals: Record<string, string> = {};
+  const fieldVals: Record<string, FieldVal> = {};
   for (const f of board.customFields) {
     const v = item.fields?.[f.id];
-    fieldVals[f.id] = v == null ? "" : String(v);
+    if (f.type === "multiselect") {
+      fieldVals[f.id] = Array.isArray(v) ? v.map(String) : v == null || v === "" ? [] : [String(v)];
+    } else {
+      fieldVals[f.id] = v == null ? "" : String(v);
+    }
   }
   return {
     title: item.title,
+    stageId: item.stageId,
+    priority: item.priority,
     primaryDate: isoDateOnly(item.primaryDate),
     tags: item.tags.join(", "),
     fieldVals,
@@ -92,6 +112,8 @@ export function ItemDetailSheet({
 
   const [form, setForm] = useState<FormState>({
     title: "",
+    stageId: "",
+    priority: "medium",
     primaryDate: "",
     tags: "",
     fieldVals: {},
@@ -107,10 +129,12 @@ export function ItemDetailSheet({
     if (!item) return false;
     const baseline = formStateFor(item, board);
     if (form.title.trim() !== baseline.title) return true;
+    if (form.stageId !== baseline.stageId) return true;
+    if (form.priority !== baseline.priority) return true;
     if (form.primaryDate !== baseline.primaryDate) return true;
     if (form.tags !== baseline.tags) return true;
     for (const f of board.customFields) {
-      if ((form.fieldVals[f.id] ?? "") !== (baseline.fieldVals[f.id] ?? "")) return true;
+      if (!sameVal(form.fieldVals[f.id], baseline.fieldVals[f.id])) return true;
     }
     return false;
   }, [item, board, form]);
@@ -121,6 +145,7 @@ export function ItemDetailSheet({
     const data: UpdateItemData = {};
 
     if (form.title.trim() && form.title.trim() !== baseline.title) data.title = form.title.trim();
+    if (form.priority !== baseline.priority) data.priority = form.priority;
     if (form.primaryDate !== baseline.primaryDate) {
       data.primaryDate = dateOnlyToISO(form.primaryDate);
     }
@@ -129,14 +154,21 @@ export function ItemDetailSheet({
     }
     const changedFields: Record<string, unknown> = {};
     for (const f of board.customFields) {
-      const localV = form.fieldVals[f.id] ?? "";
-      const baseV = baseline.fieldVals[f.id] ?? "";
-      if (localV !== baseV) changedFields[f.id] = localV;
+      const localV = form.fieldVals[f.id];
+      const baseV = baseline.fieldVals[f.id];
+      if (!sameVal(localV, baseV)) {
+        changedFields[f.id] = localV ?? (f.type === "multiselect" ? [] : "");
+      }
     }
     if (Object.keys(changedFields).length > 0) data.fields = changedFields;
 
+    const stageChanged = form.stageId !== baseline.stageId;
+
     try {
-      await update.mutateAsync({ id: item._id, data });
+      // Stage goes through the dedicated move endpoint so the timeline still
+      // logs a stage_change; everything else is a single item update.
+      if (Object.keys(data).length > 0) await update.mutateAsync({ id: item._id, data });
+      if (stageChanged) await move.mutateAsync({ id: item._id, stageId: form.stageId });
       toast.success("Changes saved");
       onOpenChange(false);
     } catch {
@@ -193,13 +225,13 @@ export function ItemDetailSheet({
               </SheetTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <Select
-                  value={item.stageId}
-                  onValueChange={(v) => move.mutate({ id: item._id, stageId: v })}
+                  value={form.stageId}
+                  onValueChange={(v) => setForm((p) => ({ ...p, stageId: v }))}
                 >
                   <SelectTrigger className="h-8 w-auto gap-2">
                     <span
                       className="h-2.5 w-2.5 rounded-full"
-                      style={{ backgroundColor: stageNames.get(item.stageId)?.color }}
+                      style={{ backgroundColor: stageNames.get(form.stageId)?.color }}
                     />
                     <SelectValue />
                   </SelectTrigger>
@@ -213,10 +245,8 @@ export function ItemDetailSheet({
                 </Select>
 
                 <Select
-                  value={item.priority}
-                  onValueChange={(v) =>
-                    update.mutate({ id: item._id, data: { priority: v as Priority } })
-                  }
+                  value={form.priority}
+                  onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Priority }))}
                 >
                   <SelectTrigger className="h-8 w-auto">
                     <SelectValue />
@@ -251,43 +281,56 @@ export function ItemDetailSheet({
                   </div>
 
                   <div className="grid grid-cols-1 gap-3">
-                    {board.customFields.map((f) => (
-                      <div key={f.id} className="space-y-1.5">
-                        <Label className="text-xs text-muted-foreground">{f.name}</Label>
-                        {f.type === "select" && f.options ? (
-                          <Select
-                            value={form.fieldVals[f.id] || ""}
-                            onValueChange={(v) =>
-                              setForm((p) => ({ ...p, fieldVals: { ...p.fieldVals, [f.id]: v } }))
-                            }
-                          >
-                            <SelectTrigger className="h-9">
-                              <SelectValue placeholder="—" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {f.options.map((o) => (
-                                <SelectItem key={o} value={o}>
-                                  {o}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        ) : (
-                          <Input
-                            className="h-9"
-                            type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
-                            value={form.fieldVals[f.id] ?? ""}
-                            onChange={(e) =>
-                              setForm((p) => ({
-                                ...p,
-                                fieldVals: { ...p.fieldVals, [f.id]: e.target.value },
-                              }))
-                            }
-                            placeholder="—"
-                          />
-                        )}
-                      </div>
-                    ))}
+                    {board.customFields.map((f) => {
+                      const opts = (f.options ?? []).filter(Boolean);
+                      const cur = form.fieldVals[f.id];
+                      return (
+                        <div key={f.id} className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground">{f.name}</Label>
+                          {f.type === "select" ? (
+                            <Select
+                              value={(cur as string) || ""}
+                              onValueChange={(v) =>
+                                setForm((p) => ({ ...p, fieldVals: { ...p.fieldVals, [f.id]: v } }))
+                              }
+                            >
+                              <SelectTrigger className="h-9">
+                                <SelectValue placeholder={opts.length ? "—" : "Add options in Settings"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {opts.map((o) => (
+                                  <SelectItem key={o} value={o}>
+                                    {o}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          ) : f.type === "multiselect" ? (
+                            <MultiSelect
+                              options={opts}
+                              value={Array.isArray(cur) ? cur : []}
+                              onChange={(next) =>
+                                setForm((p) => ({ ...p, fieldVals: { ...p.fieldVals, [f.id]: next } }))
+                              }
+                              placeholder="—"
+                            />
+                          ) : (
+                            <Input
+                              className="h-9"
+                              type={f.type === "number" ? "number" : f.type === "date" ? "date" : "text"}
+                              value={(cur as string) ?? ""}
+                              onChange={(e) =>
+                                setForm((p) => ({
+                                  ...p,
+                                  fieldVals: { ...p.fieldVals, [f.id]: e.target.value },
+                                }))
+                              }
+                              placeholder="—"
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="space-y-1.5">
@@ -319,11 +362,20 @@ export function ItemDetailSheet({
                     Unsaved changes
                   </span>
                   <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="sm" onClick={discardChanges} disabled={update.isPending}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={discardChanges}
+                      disabled={update.isPending || move.isPending}
+                    >
                       Discard
                     </Button>
-                    <Button size="sm" onClick={saveAll} disabled={update.isPending}>
-                      {update.isPending ? "Saving…" : "Save changes"}
+                    <Button
+                      size="sm"
+                      onClick={saveAll}
+                      disabled={update.isPending || move.isPending}
+                    >
+                      {update.isPending || move.isPending ? "Saving…" : "Save changes"}
                     </Button>
                   </div>
                 </>

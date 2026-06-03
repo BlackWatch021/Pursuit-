@@ -18,7 +18,7 @@ import { DeleteStageDialog } from "@/components/settings/delete-stage-dialog";
 import { useAuth } from "@/hooks/use-auth";
 import { useBoards, useUpdateBoard } from "@/hooks/use-boards";
 import { useItems } from "@/hooks/use-items";
-import { FIELD_TYPE_VALUES } from "@/lib/constants";
+import { FIELD_TYPE_LABELS, FIELD_TYPE_VALUES } from "@/lib/constants";
 import type { Board, CustomField, FieldType, Stage } from "@/lib/types";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -142,7 +142,15 @@ function BoardSection({ board }: { board: Board }) {
     );
   }
   function saveFields() {
-    update.mutate({ customFields: fields }, { onSuccess: () => toast.success("Fields saved") });
+    // Trim/drop empty options, and only keep an options list for choice fields.
+    const cleaned = fields.map((f) => {
+      const isChoice = f.type === "select" || f.type === "multiselect";
+      return {
+        ...f,
+        options: isChoice ? (f.options ?? []).map((o) => o.trim()).filter(Boolean) : undefined,
+      };
+    });
+    update.mutate({ customFields: cleaned }, { onSuccess: () => toast.success("Fields saved") });
   }
 
   return (
@@ -221,42 +229,73 @@ function BoardSection({ board }: { board: Board }) {
           </Button>
         </div>
         <div className="space-y-2">
-          {fields.map((f) => (
-            <div key={f.id} className="flex items-center gap-2">
-              <Input
-                value={f.name}
-                onChange={(e) =>
-                  setFields((p) => p.map((x) => (x.id === f.id ? { ...x, name: e.target.value } : x)))
-                }
-                className="h-9 flex-1"
-              />
-              <Select
-                value={f.type}
-                onValueChange={(v) =>
-                  setFields((p) => p.map((x) => (x.id === f.id ? { ...x, type: v as FieldType } : x)))
-                }
-              >
-                <SelectTrigger className="h-9 w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FIELD_TYPE_VALUES.map((t) => (
-                    <SelectItem key={t} value={t} className="capitalize">
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-muted-foreground"
-                onClick={() => requestDeleteField(f)}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+          {fields.map((f) => {
+            const isChoice = f.type === "select" || f.type === "multiselect";
+            return (
+              <div key={f.id} className="space-y-2 rounded-lg border p-2.5">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={f.name}
+                    onChange={(e) =>
+                      setFields((p) =>
+                        p.map((x) => (x.id === f.id ? { ...x, name: e.target.value } : x)),
+                      )
+                    }
+                    className="h-9 flex-1"
+                  />
+                  <Select
+                    value={f.type}
+                    onValueChange={(v) =>
+                      setFields((p) =>
+                        p.map((x) => (x.id === f.id ? { ...x, type: v as FieldType } : x)),
+                      )
+                    }
+                  >
+                    <SelectTrigger className="h-9 w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {FIELD_TYPE_VALUES.map((t) => (
+                        <SelectItem key={t} value={t}>
+                          {FIELD_TYPE_LABELS[t]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground"
+                    onClick={() => requestDeleteField(f)}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {isChoice && (
+                  <div className="space-y-1 pl-1">
+                    <Label className="text-xs text-muted-foreground">
+                      Options (comma separated)
+                    </Label>
+                    <Input
+                      value={(f.options ?? []).join(", ")}
+                      onChange={(e) =>
+                        setFields((p) =>
+                          p.map((x) =>
+                            x.id === f.id
+                              ? { ...x, options: e.target.value.split(",").map((o) => o.trimStart()) }
+                              : x,
+                          ),
+                        )
+                      }
+                      placeholder="e.g. Low, Medium, High"
+                      className="h-9"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
         <Button
           variant="outline"
