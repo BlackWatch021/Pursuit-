@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import type { Stage } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { Plus } from "lucide-react";
@@ -21,12 +20,18 @@ export function BoardColumn({
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
   return (
-    <div className="flex w-72 shrink-0 flex-col">
+    <div className="flex min-h-full w-72 shrink-0 flex-col">
       <div className="mb-2 flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stage.color }} />
           <span className="text-sm font-medium">{stage.name}</span>
-          <span className="rounded bg-muted px-1.5 text-xs text-muted-foreground">
+          <span
+            className="rounded px-1.5 text-xs font-medium"
+            style={{
+              backgroundColor: `color-mix(in oklab, ${stage.color} 18%, transparent)`,
+              color: stage.color,
+            }}
+          >
             {itemIds.length}
           </span>
         </div>
@@ -43,10 +48,13 @@ export function BoardColumn({
 
       <div
         ref={setNodeRef}
-        className={cn(
-          "flex min-h-24 flex-1 flex-col gap-2 rounded-lg border border-dashed border-transparent p-1.5 transition-colors",
-          isOver && "border-primary/40 bg-accent/40",
-        )}
+        style={{
+          backgroundColor: `color-mix(in oklab, ${stage.color} ${isOver ? 22 : 10}%, transparent)`,
+          borderColor: isOver
+            ? stage.color
+            : `color-mix(in oklab, ${stage.color} 22%, transparent)`,
+        }}
+        className="flex min-h-24 flex-1 flex-col gap-2 rounded-xl border p-2 transition-colors"
       >
         <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
           {children}

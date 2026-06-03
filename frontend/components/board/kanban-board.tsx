@@ -37,6 +37,7 @@ export function KanbanBoard({
   const stages = useMemo(() => sortedStages(board), [board]);
   const reorder = useReorderItems();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [dragColor, setDragColor] = useState<string | undefined>(undefined);
 
   const group = useMemo(
     () =>
@@ -44,7 +45,8 @@ export function KanbanBoard({
         const map: Columns = {};
         for (const s of stages) map[s.id] = [];
         for (const it of list) (map[it.stageId] ??= []).push(it);
-        for (const k of Object.keys(map)) map[k] = [...map[k]].sort((a, b) => a.order - b.order);
+        for (const k of Object.keys(map))
+          map[k] = [...map[k]].sort((a, b) => a.order - b.order);
         return map;
       },
     [stages],
@@ -62,7 +64,10 @@ export function KanbanBoard({
   // Reset the local arrangement when the server data (or board) changes. Tracked in
   // state (not a ref) and applied at render time — avoids both the effect-cascade
   // and the render-time ref-access warnings.
-  const [synced, setSynced] = useState<{ items: Item[]; group: (l: Item[]) => Columns }>({
+  const [synced, setSynced] = useState<{
+    items: Item[];
+    group: (l: Item[]) => Columns;
+  }>({
     items,
     group,
   });
@@ -79,7 +84,9 @@ export function KanbanBoard({
     setColumns(next);
   }
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+  );
 
   function findContainer(id: string): string | undefined {
     const cols = columnsRef.current;
@@ -88,13 +95,15 @@ export function KanbanBoard({
   }
 
   const activeItem = activeId
-    ? Object.values(columns)
+    ? (Object.values(columns)
         .flat()
-        .find((it) => it._id === activeId) ?? null
+        .find((it) => it._id === activeId) ?? null)
     : null;
 
   function onDragStart(e: DragStartEvent) {
-    setActiveId(String(e.active.id));
+    const id = String(e.active.id);
+    setActiveId(id);
+    setDragColor(stages.find((s) => s.id === findContainer(id))?.color);
   }
 
   function onDragOver(e: DragOverEvent) {
@@ -104,7 +113,9 @@ export function KanbanBoard({
     const overKey = String(over.id);
     const from = findContainer(activeKey);
     const to = findContainer(overKey);
-    if (!from || !to || from === to) return;
+    if (!from || !to) return;
+    setDragColor(stages.find((s) => s.id === to)?.color);
+    if (from === to) return;
 
     const current = columnsRef.current;
     const fromItems = current[from];
@@ -118,7 +129,11 @@ export function KanbanBoard({
     setCols({
       ...current,
       [from]: fromItems.filter((i) => i._id !== activeKey),
-      [to]: [...toItems.slice(0, overIndex), { ...moved, stageId: to }, ...toItems.slice(overIndex)],
+      [to]: [
+        ...toItems.slice(0, overIndex),
+        { ...moved, stageId: to },
+        ...toItems.slice(overIndex),
+      ],
     });
   }
 
@@ -140,6 +155,7 @@ export function KanbanBoard({
   function onDragEnd(e: DragEndEvent) {
     const { active, over } = e;
     setActiveId(null);
+    setDragColor(undefined);
     if (!over) return;
 
     const activeKey = String(active.id);
@@ -170,8 +186,12 @@ export function KanbanBoard({
       onDragStart={onDragStart}
       onDragOver={onDragOver}
       onDragEnd={onDragEnd}
+      onDragCancel={() => {
+        setActiveId(null);
+        setDragColor(undefined);
+      }}
     >
-      <div className="scrollbar-thin flex h-full gap-4 overflow-auto p-4 sm:px-6">
+      <div className="board-surface scrollbar-thin flex h-full items-start gap-4 overflow-auto p-4 sm:px-6">
         {stages.map((stage) => {
           const colItems = columns[stage.id] ?? [];
           return (
@@ -196,7 +216,14 @@ export function KanbanBoard({
       </div>
 
       <DragOverlay>
-        {activeItem ? <BoardCardView item={activeItem} board={board} dragging /> : null}
+        {activeItem ? (
+          <BoardCardView
+            item={activeItem}
+            board={board}
+            dragging
+            dragColor={dragColor}
+          />
+        ) : null}
       </DragOverlay>
     </DndContext>
   );
