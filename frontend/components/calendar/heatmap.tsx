@@ -27,7 +27,17 @@ function levelOf(count: number, max: number): number {
   return 1;
 }
 
-export function Heatmap({ data, year }: { data: { date: string; count: number }[]; year: number }) {
+export function Heatmap({
+  data,
+  year,
+  onSelectDate,
+  selected,
+}: {
+  data: { date: string; count: number }[];
+  year: number;
+  onSelectDate?: (date: string) => void;
+  selected?: string | null;
+}) {
   const counts = new Map(data.map((d) => [d.date, d.count]));
   const max = Math.max(1, ...data.map((d) => d.count));
 
@@ -74,14 +84,21 @@ export function Heatmap({ data, year }: { data: { date: string; count: number }[
               <div key={wi} className="flex flex-col gap-1">
                 {week.map((day) => {
                   const inYear = day.getUTCFullYear() === year;
-                  const count = counts.get(ymd(day)) ?? 0;
+                  const key = ymd(day);
+                  if (!inYear) {
+                    return <div key={key} className="h-3 w-3 rounded-[3px] bg-transparent" />;
+                  }
+                  const count = counts.get(key) ?? 0;
                   return (
-                    <div
-                      key={ymd(day)}
-                      title={inYear ? `${count} application${count === 1 ? "" : "s"} · ${ymd(day)}` : ""}
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => onSelectDate?.(key)}
+                      title={`${count} application${count === 1 ? "" : "s"} · ${key}`}
                       className={cn(
-                        "h-3 w-3 rounded-[3px]",
-                        inYear ? LEVEL_CLASSES[levelOf(count, max)] : "bg-transparent",
+                        "h-3 w-3 rounded-[3px] transition-transform hover:ring-1 hover:ring-ring",
+                        LEVEL_CLASSES[levelOf(count, max)],
+                        selected === key && "ring-2 ring-primary ring-offset-1 ring-offset-background",
                       )}
                     />
                   );

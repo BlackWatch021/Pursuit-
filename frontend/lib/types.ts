@@ -119,8 +119,29 @@ export interface CalendarEvent {
   done: boolean;
 }
 
+export interface CalendarItem {
+  id: string;
+  title: string;
+  stageId: string;
+  primaryDate: string;
+}
+
+export interface CalendarActivity {
+  id: string;
+  type: ActivityType;
+  content?: string;
+  fromStageId?: string;
+  toStageId?: string;
+  itemTitle: string;
+  itemId: string | null;
+  createdAt: string;
+}
+
 export interface CalendarData {
   year: number;
+  stages: Stage[];
   heatmap: { date: string; count: number }[];
+  items: CalendarItem[];
   events: CalendarEvent[];
+  recent: CalendarActivity[];
 }

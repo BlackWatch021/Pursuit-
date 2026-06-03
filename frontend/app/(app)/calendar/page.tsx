@@ -1,8 +1,10 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { DayDetail } from "@/components/calendar/day-detail";
 import { Heatmap } from "@/components/calendar/heatmap";
 import { MonthView } from "@/components/calendar/month-view";
+import { RecentActivity } from "@/components/calendar/recent-activity";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCalendar } from "@/hooks/use-dashboard";
@@ -15,6 +17,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<"heatmap" | "month">("heatmap");
   const [year, setYear] = useState(now.getUTCFullYear());
   const [month, setMonth] = useState(now.getUTCMonth());
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
   const { data, isLoading } = useCalendar(year);
 
@@ -22,7 +25,19 @@ export default function CalendarPage() {
   const total = (data?.heatmap ?? []).reduce((sum, d) => sum + d.count, 0);
   const busiest = Math.max(0, ...(data?.heatmap ?? []).map((d) => d.count));
 
+  const dayItems = selectedDate
+    ? (data?.items ?? []).filter((it) => it.primaryDate.slice(0, 10) === selectedDate)
+    : [];
+  const dayEvents = selectedDate
+    ? (data?.events ?? []).filter((e) => e.date.slice(0, 10) === selectedDate)
+    : [];
+
+  function changeYear(delta: number) {
+    setYear((y) => y + delta);
+    setSelectedDate(null);
+  }
   function prevMonth() {
+    setSelectedDate(null);
     if (month === 0) {
       setMonth(11);
       setYear((y) => y - 1);
@@ -31,6 +46,7 @@ export default function CalendarPage() {
     }
   }
   function nextMonth() {
+    setSelectedDate(null);
     if (month === 11) {
       setMonth(0);
       setYear((y) => y + 1);
@@ -65,35 +81,58 @@ export default function CalendarPage() {
       <div className="space-y-6 p-4 sm:p-6">
         {isLoading || !data ? (
           <Skeleton className="h-64 rounded-xl" />
-        ) : view === "heatmap" ? (
-          <div className="rounded-xl border bg-card p-5">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 className={cn("text-sm font-medium")}>{year}</h2>
-              <div className="flex gap-1">
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setYear((y) => y - 1)}>
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setYear((y) => y + 1)}>
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-            <Heatmap data={data.heatmap} year={year} />
-            <p className="mt-4 text-xs text-muted-foreground">
-              Busiest day: {busiest} application{busiest === 1 ? "" : "s"}.
-            </p>
-          </div>
         ) : (
-          <div className="rounded-xl border bg-card p-5">
-            <MonthView
-              year={year}
-              month={month}
-              counts={counts}
-              events={data.events}
-              onPrev={prevMonth}
-              onNext={nextMonth}
-            />
-          </div>
+          <>
+            {view === "heatmap" ? (
+              <div className="rounded-xl border bg-card p-5">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className={cn("text-sm font-medium")}>{year}</h2>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeYear(-1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => changeYear(1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                <Heatmap
+                  data={data.heatmap}
+                  year={year}
+                  onSelectDate={setSelectedDate}
+                  selected={selectedDate}
+                />
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Busiest day: {busiest} application{busiest === 1 ? "" : "s"}. Click a day for details.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border bg-card p-5">
+                <MonthView
+                  year={year}
+                  month={month}
+                  counts={counts}
+                  events={data.events}
+                  onPrev={prevMonth}
+                  onNext={nextMonth}
+                  onSelectDate={setSelectedDate}
+                  selected={selectedDate}
+                />
+              </div>
+            )}
+
+            {selectedDate && (
+              <DayDetail
+                date={selectedDate}
+                items={dayItems}
+                events={dayEvents}
+                stages={data.stages}
+                onClose={() => setSelectedDate(null)}
+              />
+            )}
+
+            <RecentActivity activities={data.recent} stages={data.stages} />
+          </>
         )}
       </div>
     </div>
