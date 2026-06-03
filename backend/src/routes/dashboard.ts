@@ -129,11 +129,18 @@ router.get(
       'title stageId primaryDate',
     );
     const counts: Record<string, number> = {};
+    const itemsInYear: { id: string; title: string; stageId: string; primaryDate: Date }[] = [];
     for (const it of items) {
       const d = new Date(it.primaryDate);
       if (d.getUTCFullYear() !== year) continue;
       const key = dayKey(d);
       counts[key] = (counts[key] || 0) + 1;
+      itemsInYear.push({
+        id: String(it._id),
+        title: it.title,
+        stageId: it.stageId,
+        primaryDate: it.primaryDate,
+      });
     }
     const heatmap = Object.entries(counts).map(([date, count]) => ({ date, count }));
 
@@ -147,7 +154,33 @@ router.get(
       done: r.done,
     }));
 
-    res.json({ year, heatmap, events });
+    // Recent activity for this board within the selected year (GitHub-style feed).
+    const boardItemIds = await Item.find({ boardId: board._id, userId }).distinct('_id');
+    const yearStart = new Date(Date.UTC(year, 0, 1));
+    const yearEnd = new Date(Date.UTC(year + 1, 0, 1));
+    const recentDocs = await Activity.find({
+      userId,
+      itemId: { $in: boardItemIds },
+      createdAt: { $gte: yearStart, $lt: yearEnd },
+    })
+      .sort({ createdAt: -1 })
+      .limit(20)
+      .populate('itemId', 'title');
+    const recent = recentDocs.map((a) => {
+      const item = a.itemId as unknown as { _id?: unknown; title?: string } | null;
+      return {
+        id: String(a._id),
+        type: a.type,
+        content: a.content,
+        fromStageId: a.fromStageId,
+        toStageId: a.toStageId,
+        itemTitle: item?.title || 'Untitled',
+        itemId: item?._id ? String(item._id) : null,
+        createdAt: a.createdAt,
+      };
+    });
+
+    res.json({ year, stages: board.stages, heatmap, items: itemsInYear, events, recent });
   }),
 );
 

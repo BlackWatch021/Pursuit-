@@ -20,6 +20,8 @@ export function MonthView({
   events,
   onPrev,
   onNext,
+  onSelectDate,
+  selected,
 }: {
   year: number;
   month: number;
@@ -27,6 +29,8 @@ export function MonthView({
   events: CalendarEvent[];
   onPrev: () => void;
   onNext: () => void;
+  onSelectDate?: (date: string) => void;
+  selected?: string | null;
 }) {
   const eventsByDay = new Map<string, CalendarEvent[]>();
   for (const e of events) {
@@ -77,9 +81,12 @@ export function MonthView({
           return (
             <div
               key={key}
+              onClick={() => onSelectDate?.(key)}
               className={cn(
                 "min-h-20 bg-card p-1.5 align-top",
+                onSelectDate && "cursor-pointer transition-colors hover:bg-muted/50",
                 !inMonth && "bg-muted/40 text-muted-foreground",
+                selected === key && "ring-2 ring-inset ring-primary",
               )}
             >
               <div className="flex items-center justify-between">
