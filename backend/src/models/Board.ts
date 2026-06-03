@@ -1,6 +1,6 @@
 import { HydratedDocument, InferSchemaType, model, Schema } from 'mongoose';
 
-export const FIELD_TYPES = ['text', 'number', 'date', 'select', 'url', 'currency'] as const;
+export const FIELD_TYPES = ['text', 'number', 'date', 'select', 'multiselect', 'url', 'currency'] as const;
 
 const stageSchema = new Schema(
   {

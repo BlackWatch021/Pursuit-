@@ -27,6 +27,7 @@ export function BoardFilters({
   onTogglePriority,
   onClear,
   activeCount,
+  children,
 }: {
   search: string;
   onSearch: (v: string) => void;
@@ -37,6 +38,7 @@ export function BoardFilters({
   onTogglePriority: (p: Priority) => void;
   onClear: () => void;
   activeCount: number;
+  children?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3 sm:px-6">
@@ -117,6 +119,8 @@ export function BoardFilters({
           Clear
         </Button>
       )}
+
+      {children && <div className="ml-auto flex items-center">{children}</div>}
     </div>
   );
 }

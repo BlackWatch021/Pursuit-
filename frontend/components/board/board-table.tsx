@@ -188,6 +188,34 @@ export function BoardTable({
                   )}
                 </td>
                 {board.customFields.map((f) => {
+                  if (f.type === "multiselect") {
+                    const raw = it.fields?.[f.id];
+                    const arr = Array.isArray(raw) ? raw.map(String) : raw ? [String(raw)] : [];
+                    return (
+                      <td key={f.id} className="border-b px-3 py-2">
+                        {arr.length ? (
+                          <div className="flex flex-wrap gap-1">
+                            {arr.slice(0, 4).map((t) => (
+                              <Badge
+                                key={t}
+                                variant="secondary"
+                                className="px-1.5 py-0 text-[10px] font-normal"
+                              >
+                                {t}
+                              </Badge>
+                            ))}
+                            {arr.length > 4 && (
+                              <span className="text-[10px] text-muted-foreground">
+                                +{arr.length - 4}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                    );
+                  }
                   const val = fieldValue(it, f.id);
                   return (
                     <td

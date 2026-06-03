@@ -15,7 +15,7 @@ import { useMemo, useState } from "react";
 
 function itemText(it: Item): string {
   const fieldVals = Object.values(it.fields ?? {})
-    .filter((v): v is string => typeof v === "string")
+    .flatMap((v) => (Array.isArray(v) ? v.map(String) : typeof v === "string" ? [v] : []))
     .join(" ");
   return `${it.title} ${fieldVals} ${it.tags.join(" ")}`.toLowerCase();
 }
@@ -87,26 +87,6 @@ export default function BoardPage() {
             : "Click a row to open and edit an application."
         }
       >
-        <div className="inline-flex rounded-lg border p-0.5">
-          <Button
-            variant={view === "board" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setView("board")}
-          >
-            <LayoutGrid className="mr-1.5 h-4 w-4" />
-            Board
-          </Button>
-          <Button
-            variant={view === "table" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setView("table")}
-          >
-            <TableIcon className="mr-1.5 h-4 w-4" />
-            Table
-          </Button>
-        </div>
         <Button
           onClick={() => {
             setDefaultStage(undefined);
@@ -128,7 +108,28 @@ export default function BoardPage() {
         onTogglePriority={togglePriority}
         onClear={clearFilters}
         activeCount={activeCount}
-      />
+      >
+        <div className="inline-flex rounded-lg border p-0.5">
+          <Button
+            variant={view === "board" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7"
+            onClick={() => setView("board")}
+          >
+            <LayoutGrid className="mr-1.5 h-4 w-4" />
+            Board
+          </Button>
+          <Button
+            variant={view === "table" ? "secondary" : "ghost"}
+            size="sm"
+            className="h-7"
+            onClick={() => setView("table")}
+          >
+            <TableIcon className="mr-1.5 h-4 w-4" />
+            Table
+          </Button>
+        </div>
+      </BoardFilters>
 
       <div className="flex min-h-0 flex-1 flex-col">
         {view === "board" && activeCount > 0 && filtered.length > 0 && (
