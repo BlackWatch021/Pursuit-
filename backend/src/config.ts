@@ -12,6 +12,15 @@ export const config = {
   jwtExpiresInSeconds: 60 * 60 * 24 * 7, // 7 days
   clientOrigin: process.env.CLIENT_ORIGIN || 'http://localhost:3000',
   cookieName: process.env.COOKIE_NAME || 'pursuit_token',
+  // SMTP (e.g. Gmail). When unset, emails are logged to the console instead of sent.
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.EMAIL_FROM || 'Pursuit <no-reply@pursuit.app>',
+  },
+  otpTtlMinutes: 10,
 };
 
 if (!process.env.JWT_SECRET) {

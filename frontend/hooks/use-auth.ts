@@ -41,3 +41,44 @@ export function useLogout() {
     },
   });
 }
+
+export function useUpdateProfile() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name?: string; image?: string }) =>
+      api.patch<{ user: User }>("/api/auth/me", input),
+    onSuccess: (data) => qc.setQueryData(["me"], data),
+  });
+}
+
+export function useUpdateEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; currentPassword: string }) =>
+      api.patch<{ user: User }>("/api/auth/email", input),
+    onSuccess: (data) => qc.setQueryData(["me"], data),
+  });
+}
+
+export function useUpdatePassword() {
+  return useMutation({
+    mutationFn: (input: { currentPassword: string; newPassword: string }) =>
+      api.patch<{ ok: true }>("/api/auth/password", input),
+  });
+}
+
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: (input: { email: string }) =>
+      api.post<{ ok: true }>("/api/auth/forgot-password", input),
+  });
+}
+
+export function useResetPassword() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { email: string; otp: string; newPassword: string }) =>
+      api.post<{ user: User }>("/api/auth/reset-password", input),
+    onSuccess: (data) => qc.setQueryData(["me"], data),
+  });
+}

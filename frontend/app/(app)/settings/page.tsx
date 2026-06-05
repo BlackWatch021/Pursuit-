@@ -13,32 +13,230 @@ import {
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DeleteStageDialog } from "@/components/settings/delete-stage-dialog";
-import { useAuth } from "@/hooks/use-auth";
+import {
+  useAuth,
+  useUpdateEmail,
+  useUpdatePassword,
+  useUpdateProfile,
+} from "@/hooks/use-auth";
 import { useBoards, useUpdateBoard } from "@/hooks/use-boards";
 import { useItems } from "@/hooks/use-items";
+import { ApiError } from "@/lib/api";
 import { FIELD_TYPE_LABELS, FIELD_TYPE_VALUES } from "@/lib/constants";
-import type { Board, CustomField, FieldType, Stage } from "@/lib/types";
+import type { Board, CustomField, FieldType, Stage, User } from "@/lib/types";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
+function initialsOf(name: string) {
+  return name
+    .split(" ")
+    .map((s) => s[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
 function ProfileSection() {
   const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
+  const updateEmail = useUpdateEmail();
+  const updatePassword = useUpdatePassword();
+
+  const [name, setName] = useState("");
+  const [image, setImage] = useState("");
+  const [email, setEmail] = useState("");
+  const [emailPassword, setEmailPassword] = useState("");
+  const [curPw, setCurPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+
+  // Sync the editable fields from the loaded user at render time (not in an
+  // effect — see MEMORY §12). Re-runs when the cached user object changes,
+  // e.g. after a successful save.
+  const [synced, setSynced] = useState<User | null>(null);
+  if (user && user !== synced) {
+    setSynced(user);
+    setName(user.name);
+    setImage(user.image ?? "");
+    setEmail(user.email);
+  }
+
   if (!user) return null;
+
+  const profileDirty = name.trim() !== user.name || image.trim() !== (user.image ?? "");
+  const emailDirty = email.trim().toLowerCase() !== user.email;
+
+  function saveProfile() {
+    if (!name.trim()) {
+      toast.error("Name can't be empty");
+      return;
+    }
+    updateProfile.mutate(
+      { name: name.trim(), image: image.trim() },
+      {
+        onSuccess: () => toast.success("Profile updated"),
+        onError: (e) =>
+          toast.error(e instanceof ApiError ? e.message : "Couldn't update profile"),
+      },
+    );
+  }
+
+  function saveEmail() {
+    updateEmail.mutate(
+      { email: email.trim(), currentPassword: emailPassword },
+      {
+        onSuccess: () => {
+          toast.success("Email updated");
+          setEmailPassword("");
+        },
+        onError: (e) => toast.error(e instanceof ApiError ? e.message : "Couldn't update email"),
+      },
+    );
+  }
+
+  function savePassword() {
+    if (newPw.length < 6) {
+      toast.error("New password must be at least 6 characters");
+      return;
+    }
+    if (newPw !== confirmPw) {
+      toast.error("New passwords don't match");
+      return;
+    }
+    updatePassword.mutate(
+      { currentPassword: curPw, newPassword: newPw },
+      {
+        onSuccess: () => {
+          toast.success("Password changed");
+          setCurPw("");
+          setNewPw("");
+          setConfirmPw("");
+        },
+        onError: (e) =>
+          toast.error(e instanceof ApiError ? e.message : "Couldn't change password"),
+      },
+    );
+  }
+
   return (
-    <div className="max-w-md space-y-4 rounded-xl border bg-card p-5">
-      <div className="space-y-2">
-        <Label>Name</Label>
-        <Input value={user.name} readOnly />
+    <div className="max-w-md space-y-6">
+      {/* Profile */}
+      <div className="space-y-4 rounded-xl border bg-card p-5">
+        <div className="flex items-center gap-3">
+          <Avatar size="lg" className="h-12 w-12">
+            {image.trim() && <AvatarImage src={image.trim()} alt={name} />}
+            <AvatarFallback className="bg-primary/10 text-sm font-medium text-primary">
+              {initialsOf(name || user.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-medium">{name || user.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Name</Label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>Avatar URL</Label>
+          <Input
+            value={image}
+            onChange={(e) => setImage(e.target.value)}
+            placeholder="https://…"
+          />
+          <p className="text-xs text-muted-foreground">
+            Paste an image link. File upload is coming later.
+          </p>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={saveProfile}
+            disabled={updateProfile.isPending || !profileDirty}
+          >
+            Save
+          </Button>
+        </div>
       </div>
-      <div className="space-y-2">
-        <Label>Email</Label>
-        <Input value={user.email} readOnly />
+
+      {/* Email */}
+      <div className="space-y-4 rounded-xl border bg-card p-5">
+        <div>
+          <h2 className="text-sm font-medium">Email</h2>
+          <p className="text-xs text-muted-foreground">
+            Changing your email needs your current password.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label>Email address</Label>
+          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        </div>
+        <div className="space-y-2">
+          <Label>Current password</Label>
+          <Input
+            type="password"
+            value={emailPassword}
+            onChange={(e) => setEmailPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+        </div>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={saveEmail}
+            disabled={updateEmail.isPending || !emailDirty || !emailPassword}
+          >
+            Update email
+          </Button>
+        </div>
       </div>
-      <p className="text-xs text-muted-foreground">Profile editing is coming soon.</p>
+
+      {/* Password */}
+      <div className="space-y-4 rounded-xl border bg-card p-5">
+        <div>
+          <h2 className="text-sm font-medium">Password</h2>
+          <p className="text-xs text-muted-foreground">Use at least 6 characters.</p>
+        </div>
+        <div className="space-y-2">
+          <Label>Current password</Label>
+          <Input
+            type="password"
+            value={curPw}
+            onChange={(e) => setCurPw(e.target.value)}
+            placeholder="••••••••"
+          />
+        </div>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="space-y-2">
+            <Label>New password</Label>
+            <Input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Confirm new</Label>
+            <Input
+              type="password"
+              value={confirmPw}
+              onChange={(e) => setConfirmPw(e.target.value)}
+            />
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            size="sm"
+            onClick={savePassword}
+            disabled={updatePassword.isPending || !curPw || !newPw || !confirmPw}
+          >
+            Change password
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

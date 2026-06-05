@@ -1,6 +1,6 @@
 "use client";
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -41,6 +41,7 @@ export function UserMenu() {
       <DropdownMenuTrigger asChild>
         <button className="flex w-full items-center gap-2 rounded-md p-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground">
           <Avatar className="h-8 w-8">
+            {user.image && <AvatarImage src={user.image} alt={user.name} />}
             <AvatarFallback className="bg-primary/10 text-xs font-medium text-primary">
               {initialsOf(user.name)}
             </AvatarFallback>
