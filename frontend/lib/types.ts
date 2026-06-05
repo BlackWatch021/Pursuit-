@@ -39,6 +39,10 @@ export interface Board {
   color: string;
   stages: Stage[];
   customFields: CustomField[];
+  titleLabel: string;
+  dateLabel: string;
+  showTags: boolean;
+  showPriority: boolean;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;

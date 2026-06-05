@@ -12,8 +12,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useActiveBoard } from "@/components/board-provider";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { DeleteStageDialog } from "@/components/settings/delete-stage-dialog";
 import {
@@ -22,14 +24,14 @@ import {
   useUpdatePassword,
   useUpdateProfile,
 } from "@/hooks/use-auth";
-import { useBoards, useUpdateBoard } from "@/hooks/use-boards";
+import { useDeleteBoard, useUpdateBoard } from "@/hooks/use-boards";
 import { useItems } from "@/hooks/use-items";
 import { ApiError } from "@/lib/api";
 import { FIELD_TYPE_LABELS, FIELD_TYPE_VALUES } from "@/lib/constants";
 import type { Board, CustomField, FieldType, Stage, User } from "@/lib/types";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
 function initialsOf(name: string) {
@@ -266,13 +268,34 @@ function AppearanceSection() {
 
 function BoardSection({ board }: { board: Board }) {
   const update = useUpdateBoard(board._id);
+  const deleteBoard = useDeleteBoard();
+  const { boards, setActiveBoardId } = useActiveBoard();
+  const [name, setName] = useState(board.name);
+  const [color, setColor] = useState(board.color);
+  const [titleLabel, setTitleLabel] = useState(board.titleLabel);
+  const [dateLabel, setDateLabel] = useState(board.dateLabel);
+  const [showTags, setShowTags] = useState(board.showTags);
+  const [showPriority, setShowPriority] = useState(board.showPriority);
   const [stages, setStages] = useState<Stage[]>(board.stages.map((s) => ({ ...s })));
   const [fields, setFields] = useState<CustomField[]>(board.customFields.map((f) => ({ ...f })));
+  const [deletingBoard, setDeletingBoard] = useState(false);
 
-  useEffect(() => {
+  // Re-sync local edits when the saved board object changes (after a save, a
+  // stage delete, or switching boards). Render-time guard, not an effect —
+  // see MEMORY §12. react-query's structural sharing keeps the reference
+  // stable unless the data actually changed, so this only fires on real updates.
+  const [synced, setSynced] = useState(board);
+  if (synced !== board) {
+    setSynced(board);
+    setName(board.name);
+    setColor(board.color);
+    setTitleLabel(board.titleLabel);
+    setDateLabel(board.dateLabel);
+    setShowTags(board.showTags);
+    setShowPriority(board.showPriority);
     setStages(board.stages.map((s) => ({ ...s })));
     setFields(board.customFields.map((f) => ({ ...f })));
-  }, [board]);
+  }
 
   const { data: itemsData } = useItems(board._id);
   const countByStage = useMemo(() => {
@@ -351,8 +374,116 @@ function BoardSection({ board }: { board: Board }) {
     update.mutate({ customFields: cleaned }, { onSuccess: () => toast.success("Fields saved") });
   }
 
+  const metaDirty =
+    name !== board.name ||
+    color !== board.color ||
+    titleLabel !== board.titleLabel ||
+    dateLabel !== board.dateLabel ||
+    showTags !== board.showTags ||
+    showPriority !== board.showPriority;
+
   return (
     <div className="space-y-6">
+      {/* Board name + color + delete */}
+      <div className="space-y-3 rounded-xl border bg-card p-5">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-medium">Board</h2>
+            <p className="text-xs text-muted-foreground">Name and color of this tracker.</p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() =>
+              update.mutate(
+                {
+                  name: name.trim(),
+                  color,
+                  titleLabel: titleLabel.trim() || "Title",
+                  dateLabel: dateLabel.trim() || "Date",
+                  showTags,
+                  showPriority,
+                },
+                { onSuccess: () => toast.success("Board saved") },
+              )
+            }
+            disabled={update.isPending || !name.trim() || !metaDirty}
+          >
+            Save
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="color"
+            value={color}
+            onChange={(e) => setColor(e.target.value)}
+            className="h-9 w-9 shrink-0 cursor-pointer rounded border bg-transparent"
+            aria-label="Board color"
+          />
+          <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 border-t pt-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Title field label</Label>
+            <Input
+              value={titleLabel}
+              onChange={(e) => setTitleLabel(e.target.value)}
+              placeholder="Title"
+              className="h-9"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs text-muted-foreground">Date field label</Label>
+            <Input
+              value={dateLabel}
+              onChange={(e) => setDateLabel(e.target.value)}
+              placeholder="Date"
+              className="h-9"
+            />
+          </div>
+        </div>
+
+        <div className="flex items-start justify-between gap-3 border-t pt-3">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Tags</p>
+            <p className="text-xs text-muted-foreground">
+              Free-form labels to group and filter items.{" "}
+              <span className="italic">e.g. remote, urgent, follow-up</span>
+            </p>
+          </div>
+          <Switch checked={showTags} onCheckedChange={setShowTags} />
+        </div>
+
+        <div className="flex items-start justify-between gap-3">
+          <div className="space-y-0.5">
+            <p className="text-sm font-medium">Priority</p>
+            <p className="text-xs text-muted-foreground">
+              Flag how important each item is, with sortable levels.{" "}
+              <span className="italic">e.g. Low / Medium / High</span>
+            </p>
+          </div>
+          <Switch checked={showPriority} onCheckedChange={setShowPriority} />
+        </div>
+
+        <div className="flex items-center justify-between border-t pt-3">
+          <p className="text-xs text-muted-foreground">
+            {boards.length <= 1
+              ? "Your only board can't be deleted."
+              : "Deleting a board removes all of its applications."}
+          </p>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            disabled={boards.length <= 1 || deleteBoard.isPending}
+            onClick={() => setDeletingBoard(true)}
+          >
+            <Trash2 className="mr-1.5 h-4 w-4" />
+            Delete board
+          </Button>
+        </div>
+      </div>
+
       {/* Stages */}
       <div className="space-y-3 rounded-xl border bg-card p-5">
         <div className="flex items-center justify-between">
@@ -530,17 +661,34 @@ function BoardSection({ board }: { board: Board }) {
           if (deletingField) setFields((p) => p.filter((x) => x.id !== deletingField.id));
         }}
       />
+
+      <ConfirmDialog
+        open={deletingBoard}
+        onOpenChange={setDeletingBoard}
+        title={`Delete “${board.name}”?`}
+        description="This permanently deletes the board and all of its applications, activity, and reminders. This can't be undone."
+        confirmLabel="Delete board"
+        destructive
+        onConfirm={() => {
+          deleteBoard.mutate(board._id, {
+            onSuccess: () => {
+              toast.success("Board deleted");
+              const remaining = boards.filter((b) => b._id !== board._id);
+              if (remaining[0]) setActiveBoardId(remaining[0]._id);
+            },
+          });
+        }}
+      />
     </div>
   );
 }
 
 export default function SettingsPage() {
-  const { data } = useBoards();
-  const board = data?.boards[0];
+  const { activeBoard: board } = useActiveBoard();
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Settings" description="Manage your account and board." />
+      <PageHeader title="Settings" description="Manage your account and boards." />
       <div className="p-4 sm:p-6">
         <Tabs defaultValue="board" className="max-w-3xl">
           <TabsList>
@@ -552,7 +700,11 @@ export default function SettingsPage() {
             <ProfileSection />
           </TabsContent>
           <TabsContent value="board" className="mt-4">
-            {board ? <BoardSection board={board} /> : <Skeleton className="h-64 rounded-xl" />}
+            {board ? (
+              <BoardSection key={board._id} board={board} />
+            ) : (
+              <Skeleton className="h-64 rounded-xl" />
+            )}
           </TabsContent>
           <TabsContent value="appearance" className="mt-4">
             <AppearanceSection />

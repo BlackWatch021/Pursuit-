@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { useActiveBoard } from "@/components/board-provider";
 import { Funnel } from "@/components/dashboard/funnel";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
@@ -67,7 +68,8 @@ function ActivityLine({ a, stages }: { a: Activity; stages: Stage[] }) {
 }
 
 export default function DashboardPage() {
-  const { data, isLoading } = useDashboard();
+  const { activeBoardId } = useActiveBoard();
+  const { data, isLoading } = useDashboard(activeBoardId ?? undefined);
   const updateReminder = useUpdateReminder();
 
   return (

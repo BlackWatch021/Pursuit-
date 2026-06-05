@@ -64,7 +64,7 @@ export function NewItemDialog({
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!title.trim()) {
-      toast.error("Company is required");
+      toast.error(`${board.titleLabel} is required`);
       return;
     }
     const fieldValues: Record<string, unknown> = {};
@@ -106,12 +106,11 @@ export function NewItemDialog({
 
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="company">Company</Label>
+            <Label htmlFor="company">{board.titleLabel}</Label>
             <Input
               id="company"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Acme Inc."
               autoFocus
             />
           </div>
@@ -133,7 +132,7 @@ export function NewItemDialog({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="date">Applied date</Label>
+              <Label htmlFor="date">{board.dateLabel}</Label>
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
           </div>
@@ -180,30 +179,36 @@ export function NewItemDialog({
             })}
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label>Priority</Label>
-              <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
+          {(board.showPriority || board.showTags) && (
+            <div className="grid grid-cols-2 gap-3">
+              {board.showPriority && (
+                <div className="space-y-2">
+                  <Label>Priority</Label>
+                  <Select value={priority} onValueChange={(v) => setPriority(v as Priority)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="high">High</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {board.showTags && (
+                <div className="space-y-2">
+                  <Label htmlFor="tags">Tags</Label>
+                  <Input
+                    id="tags"
+                    value={tags}
+                    onChange={(e) => setTags(e.target.value)}
+                    placeholder="remote, dream-job"
+                  />
+                </div>
+              )}
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tags">Tags</Label>
-              <Input
-                id="tags"
-                value={tags}
-                onChange={(e) => setTags(e.target.value)}
-                placeholder="remote, dream-job"
-              />
-            </div>
-          </div>
+          )}
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => onOpenChange(false)}>

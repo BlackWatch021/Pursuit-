@@ -27,6 +27,8 @@ export function BoardFilters({
   onTogglePriority,
   onClear,
   activeCount,
+  showTags = true,
+  showPriority = true,
   children,
 }: {
   search: string;
@@ -38,6 +40,8 @@ export function BoardFilters({
   onTogglePriority: (p: Priority) => void;
   onClear: () => void;
   activeCount: number;
+  showTags?: boolean;
+  showPriority?: boolean;
   children?: React.ReactNode;
 }) {
   return (
@@ -53,60 +57,64 @@ export function BoardFilters({
       </div>
 
       {/* Tags */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9">
-            <Tag className="mr-1.5 h-4 w-4" />
-            Tags
-            <CountBadge n={selectedTags.length} />
-            <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-52 p-1">
-          {allTags.length === 0 ? (
-            <p className="px-2 py-3 text-center text-xs text-muted-foreground">No tags yet</p>
-          ) : (
-            <div className="max-h-64 overflow-y-auto">
-              {allTags.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => onToggleTag(t)}
-                  className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent"
-                >
-                  <span className="truncate">{t}</span>
-                  {selectedTags.includes(t) && <Check className="h-4 w-4 shrink-0 text-primary" />}
-                </button>
-              ))}
-            </div>
-          )}
-        </PopoverContent>
-      </Popover>
+      {showTags && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <Tag className="mr-1.5 h-4 w-4" />
+              Tags
+              <CountBadge n={selectedTags.length} />
+              <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-52 p-1">
+            {allTags.length === 0 ? (
+              <p className="px-2 py-3 text-center text-xs text-muted-foreground">No tags yet</p>
+            ) : (
+              <div className="max-h-64 overflow-y-auto">
+                {allTags.map((t) => (
+                  <button
+                    key={t}
+                    onClick={() => onToggleTag(t)}
+                    className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent"
+                  >
+                    <span className="truncate">{t}</span>
+                    {selectedTags.includes(t) && <Check className="h-4 w-4 shrink-0 text-primary" />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </PopoverContent>
+        </Popover>
+      )}
 
       {/* Priority */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button variant="outline" size="sm" className="h-9">
-            <Flag className="mr-1.5 h-4 w-4" />
-            Priority
-            <CountBadge n={selectedPriorities.length} />
-            <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent align="start" className="w-44 p-1">
-          {PRIORITY_OPTIONS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => onTogglePriority(p.value)}
-              className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent"
-            >
-              <span>{p.label}</span>
-              {selectedPriorities.includes(p.value) && (
-                <Check className="h-4 w-4 shrink-0 text-primary" />
-              )}
-            </button>
-          ))}
-        </PopoverContent>
-      </Popover>
+      {showPriority && (
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-9">
+              <Flag className="mr-1.5 h-4 w-4" />
+              Priority
+              <CountBadge n={selectedPriorities.length} />
+              <ChevronDown className="ml-1 h-3.5 w-3.5 opacity-60" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-44 p-1">
+            {PRIORITY_OPTIONS.map((p) => (
+              <button
+                key={p.value}
+                onClick={() => onTogglePriority(p.value)}
+                className="flex w-full items-center justify-between rounded px-2 py-1.5 text-sm hover:bg-accent"
+              >
+                <span>{p.label}</span>
+                {selectedPriorities.includes(p.value) && (
+                  <Check className="h-4 w-4 shrink-0 text-primary" />
+                )}
+              </button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      )}
 
       {activeCount > 0 && (
         <Button
