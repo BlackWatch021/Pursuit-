@@ -32,7 +32,7 @@ import {
 import { sortedStages, stageMap } from "@/lib/board-utils";
 import { dateOnlyToISO, fmtDate, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Board, Item, Priority } from "@/lib/types";
-import { ArrowRight, Bell, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
+import { ArrowRight, Bell, Pencil, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -434,6 +434,26 @@ function ActivityRow({ a, board }: { a: Activity; board: Board }) {
           {from && <span className="font-medium">{from.name}</span>}
           <span className="text-muted-foreground"> → </span>
           <span className="font-medium">{to?.name ?? "?"}</span>
+          <p className="mt-0.5 text-xs text-muted-foreground">{time}</p>
+        </div>
+      </li>
+    );
+  }
+
+  if (a.type === "field_change") {
+    const meta = (a.meta ?? {}) as { label?: string; from?: string; to?: string };
+    return (
+      <li className="flex gap-3">
+        <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <Pencil className="h-3.5 w-3.5" />
+        </span>
+        <div className="min-w-0 flex-1 pt-1 text-sm">
+          <span className="font-medium">{meta.label ?? "Field"}</span>
+          <span className="text-muted-foreground"> changed </span>
+          <span className="text-muted-foreground">from </span>
+          <span>{meta.from || "—"}</span>
+          <span className="text-muted-foreground"> to </span>
+          <span>{meta.to || "—"}</span>
           <p className="mt-0.5 text-xs text-muted-foreground">{time}</p>
         </div>
       </li>

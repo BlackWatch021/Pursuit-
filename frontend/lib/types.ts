@@ -139,6 +139,7 @@ export interface CalendarActivity {
   content?: string;
   fromStageId?: string;
   toStageId?: string;
+  meta?: unknown;
   itemTitle: string;
   itemId: string | null;
   createdAt: string;

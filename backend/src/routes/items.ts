@@ -102,16 +102,63 @@ router.patch(
     const item = await Item.findOne({ _id: req.params.id, userId: req.userId });
     if (!item) throw new HttpError(404, 'Item not found');
 
-    if (data.title !== undefined) item.title = data.title;
-    if (data.primaryDate !== undefined) item.primaryDate = data.primaryDate;
+    // Map custom field ids to their human names for the activity log.
+    const board = await Board.findOne({ _id: item.boardId, userId: req.userId });
+    const fieldName = (id: string) =>
+      board?.customFields.find((f) => f.id === id)?.name ?? 'Field';
+
+    const toStr = (v: unknown): string =>
+      v == null ? '' : Array.isArray(v) ? v.join(', ') : String(v);
+    const dateStr = (d: unknown) => (d ? new Date(d as Date).toISOString().slice(0, 10) : '');
+
+    // Collect human-readable diffs so we can log a field_change per changed field.
+    const changes: { label: string; from: string; to: string }[] = [];
+
+    if (data.title !== undefined && data.title !== item.title) {
+      changes.push({ label: 'Title', from: item.title, to: data.title });
+      item.title = data.title;
+    }
+    if (data.primaryDate !== undefined && dateStr(data.primaryDate) !== dateStr(item.primaryDate)) {
+      changes.push({
+        label: 'Applied date',
+        from: dateStr(item.primaryDate),
+        to: dateStr(data.primaryDate),
+      });
+      item.primaryDate = data.primaryDate;
+    }
     if (data.fields !== undefined) {
-      item.fields = { ...(item.fields as Record<string, unknown>), ...data.fields };
+      const oldFields = (item.fields as Record<string, unknown>) ?? {};
+      for (const [key, val] of Object.entries(data.fields)) {
+        if (toStr(oldFields[key]) !== toStr(val)) {
+          changes.push({ label: fieldName(key), from: toStr(oldFields[key]), to: toStr(val) });
+        }
+      }
+      item.fields = { ...oldFields, ...data.fields };
       item.markModified('fields');
     }
-    if (data.tags !== undefined) item.tags = data.tags;
-    if (data.priority !== undefined) item.priority = data.priority;
+    if (data.tags !== undefined && toStr(item.tags) !== toStr(data.tags)) {
+      changes.push({ label: 'Tags', from: toStr(item.tags), to: toStr(data.tags) });
+      item.tags = data.tags;
+    }
+    if (data.priority !== undefined && data.priority !== item.priority) {
+      changes.push({ label: 'Priority', from: item.priority, to: data.priority });
+      item.priority = data.priority;
+    }
     if (data.archived !== undefined) item.archived = data.archived;
+
     await item.save();
+
+    if (changes.length > 0) {
+      await Activity.insertMany(
+        changes.map((c) => ({
+          itemId: item._id,
+          userId: req.userId,
+          type: 'field_change',
+          content: `${c.label}: ${c.from || '—'} → ${c.to || '—'}`,
+          meta: c,
+        })),
+      );
+    }
 
     res.json({ item });
   }),

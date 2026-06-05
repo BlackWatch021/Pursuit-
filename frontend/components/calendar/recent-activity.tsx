@@ -33,8 +33,16 @@ function describe(a: CalendarActivity, stageName: (id?: string) => string): Reac
       );
     case "reminder":
       return <>Reminder set for {title}</>;
-    case "field_change":
-      return <>Updated {title}</>;
+    case "field_change": {
+      const label = (a.meta as { label?: string } | undefined)?.label;
+      return label ? (
+        <>
+          Updated {label} on {title}
+        </>
+      ) : (
+        <>Updated {title}</>
+      );
+    }
     default:
       return title;
   }

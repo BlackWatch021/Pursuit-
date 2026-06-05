@@ -174,6 +174,7 @@ router.get(
         content: a.content,
         fromStageId: a.fromStageId,
         toStageId: a.toStageId,
+        meta: a.meta,
         itemTitle: item?.title || 'Untitled',
         itemId: item?._id ? String(item._id) : null,
         createdAt: a.createdAt,
