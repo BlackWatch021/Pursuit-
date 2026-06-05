@@ -13,6 +13,31 @@ export const loginSchema = z.object({
   password: z.string().min(1),
 });
 
+export const updateProfileSchema = z.object({
+  name: z.string().min(1).max(80).optional(),
+  image: z.string().max(1000).optional(),
+});
+
+export const updateEmailSchema = z.object({
+  email: z.string().email(),
+  currentPassword: z.string().min(1),
+});
+
+export const updatePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(6).max(200),
+});
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().email(),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().email(),
+  otp: z.string().regex(/^\d{6}$/, 'Enter the 6-digit code'),
+  newPassword: z.string().min(6).max(200),
+});
+
 const stageInput = z.object({
   id: z.string().optional(),
   name: z.string().min(1),
