@@ -3,6 +3,7 @@ import { Response, Router } from 'express';
 import { config } from '../config';
 import { requireAuth } from '../middleware/auth';
 import { HttpError } from '../middleware/error';
+import { authLimiter, passwordResetLimiter } from '../middleware/rateLimit';
 import { User } from '../models/User';
 import { asyncHandler } from '../utils/asyncHandler';
 import { signToken } from '../utils/jwt';
@@ -32,6 +33,7 @@ function setAuthCookie(res: Response, token: string) {
 
 router.post(
   '/register',
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { name, email, password } = registerSchema.parse(req.body);
     const existing = await User.findOne({ email });
@@ -48,6 +50,7 @@ router.post(
 
 router.post(
   '/login',
+  authLimiter,
   asyncHandler(async (req, res) => {
     const { email, password } = loginSchema.parse(req.body);
     const user = await User.findOne({ email });
@@ -70,6 +73,7 @@ router.post('/logout', (_req, res) => {
 // an email is registered.
 router.post(
   '/forgot-password',
+  passwordResetLimiter,
   asyncHandler(async (req, res) => {
     const { email } = forgotPasswordSchema.parse(req.body);
     const user = await User.findOne({ email: email.toLowerCase() });
@@ -90,6 +94,7 @@ router.post(
 // Verify the OTP and set a new password.
 router.post(
   '/reset-password',
+  passwordResetLimiter,
   asyncHandler(async (req, res) => {
     const { email, otp, newPassword } = resetPasswordSchema.parse(req.body);
     const user = await User.findOne({ email: email.toLowerCase() });

@@ -15,6 +15,9 @@ async function main() {
   await connectDB();
 
   const app = express();
+  // Behind a hosting proxy (Render/Railway/etc.) so req.ip is the real client
+  // IP — required for per-IP rate limiting to work correctly.
+  if (config.isProd) app.set('trust proxy', 1);
   app.use(cors({ origin: config.clientOrigin, credentials: true }));
   app.use(express.json());
   app.use(cookieParser());
