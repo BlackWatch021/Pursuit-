@@ -65,6 +65,7 @@ export function useUpdateItem() {
     onSuccess: (_res, vars) => {
       qc.invalidateQueries({ queryKey: ["items"] });
       qc.invalidateQueries({ queryKey: ["item", vars.id] });
+      qc.invalidateQueries({ queryKey: ["activities"] });
       qc.invalidateQueries({ queryKey: ["dashboard"] });
       qc.invalidateQueries({ queryKey: ["calendar"] });
     },

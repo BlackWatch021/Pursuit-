@@ -10,7 +10,7 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { useUpdateReminder } from "@/hooks/use-reminders";
 import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Reminder, Stage } from "@/lib/types";
-import { ArrowRight, Bell, Briefcase, Plus, Sparkles, StickyNote } from "lucide-react";
+import { ArrowRight, Bell, Briefcase, Pencil, Plus, Sparkles, StickyNote } from "lucide-react";
 import Link from "next/link";
 
 function refTitle(ref: Activity["itemId"] | Reminder["itemId"]): string {
@@ -40,6 +40,15 @@ function ActivityLine({ a, stages }: { a: Activity; stages: Stage[] }) {
       <>
         Moved <span className="font-medium">{title}</span> to{" "}
         <span className="font-medium">{stageName(a.toStageId)}</span>
+      </>
+    );
+  } else if (a.type === "field_change") {
+    const label = (a.meta as { label?: string } | undefined)?.label;
+    icon = <Pencil className="h-3.5 w-3.5" />;
+    text = (
+      <>
+        Updated {label ? <span className="font-medium">{label}</span> : "a field"} on{" "}
+        <span className="font-medium">{title}</span>
       </>
     );
   }
