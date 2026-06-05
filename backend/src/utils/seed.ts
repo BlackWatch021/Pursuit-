@@ -48,6 +48,8 @@ export async function createDefaultBoard(userId: string): Promise<BoardDoc> {
     color: '#6366F1',
     stages,
     customFields,
+    titleLabel: 'Company',
+    dateLabel: 'Applied date',
     isDefault: true,
   });
 }

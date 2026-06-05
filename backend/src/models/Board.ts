@@ -30,6 +30,12 @@ const boardSchema = new Schema(
     color: { type: String, default: '#6366F1' },
     stages: { type: [stageSchema], default: [] },
     customFields: { type: [fieldSchema], default: [] },
+    // Per-board labels for the built-in title/date fields + opt-in/out of the
+    // built-in tags/priority. Generic defaults so non-job boards read naturally.
+    titleLabel: { type: String, default: 'Title' },
+    dateLabel: { type: String, default: 'Date' },
+    showTags: { type: Boolean, default: true },
+    showPriority: { type: Boolean, default: true },
     isDefault: { type: Boolean, default: false },
   },
   { timestamps: true },

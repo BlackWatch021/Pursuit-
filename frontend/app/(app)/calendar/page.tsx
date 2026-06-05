@@ -1,6 +1,7 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { useActiveBoard } from "@/components/board-provider";
 import { DayDetail } from "@/components/calendar/day-detail";
 import { Heatmap } from "@/components/calendar/heatmap";
 import { MonthView } from "@/components/calendar/month-view";
@@ -19,7 +20,8 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getUTCMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { data, isLoading } = useCalendar(year);
+  const { activeBoardId } = useActiveBoard();
+  const { data, isLoading } = useCalendar(year, activeBoardId ?? undefined);
 
   const counts = new Map((data?.heatmap ?? []).map((d) => [d.date, d.count]));
   const total = (data?.heatmap ?? []).reduce((sum, d) => sum + d.count, 0);

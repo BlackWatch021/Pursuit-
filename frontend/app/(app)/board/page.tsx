@@ -1,13 +1,13 @@
 "use client";
 
 import { PageHeader } from "@/components/app/page-header";
+import { useActiveBoard } from "@/components/board-provider";
 import { BoardFilters } from "@/components/board/board-filters";
 import { BoardTable } from "@/components/board/board-table";
 import { KanbanBoard } from "@/components/board/kanban-board";
 import { NewItemDialog } from "@/components/board/new-item-dialog";
 import { ItemDetailSheet } from "@/components/items/item-detail-sheet";
 import { Button } from "@/components/ui/button";
-import { useBoards } from "@/hooks/use-boards";
 import { useItems } from "@/hooks/use-items";
 import type { Item, Priority } from "@/lib/types";
 import { LayoutGrid, Loader2, Plus, Table as TableIcon } from "lucide-react";
@@ -21,8 +21,7 @@ function itemText(it: Item): string {
 }
 
 export default function BoardPage() {
-  const { data: boardsData, isLoading: boardsLoading } = useBoards();
-  const board = boardsData?.boards[0];
+  const { activeBoard: board, isLoading: boardsLoading } = useActiveBoard();
 
   const { data: itemsData, isLoading: itemsLoading } = useItems(board?._id);
   const allItems = useMemo(() => itemsData?.items ?? [], [itemsData]);
@@ -30,6 +29,21 @@ export default function BoardPage() {
   const [search, setSearch] = useState("");
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedPriorities, setSelectedPriorities] = useState<Priority[]>([]);
+
+  const showTags = board?.showTags ?? true;
+  const showPriority = board?.showPriority ?? true;
+
+  // Clear filters when switching boards so a previous board's tags/priorities
+  // don't carry over (render-time guard — see MEMORY §12).
+  const [filterBoardId, setFilterBoardId] = useState<string | undefined>(undefined);
+  if (board && board._id !== filterBoardId) {
+    setFilterBoardId(board._id);
+    if (search || selectedTags.length || selectedPriorities.length) {
+      setSearch("");
+      setSelectedTags([]);
+      setSelectedPriorities([]);
+    }
+  }
 
   const [view, setView] = useState<"board" | "table">("board");
   const [newOpen, setNewOpen] = useState(false);
@@ -46,14 +60,18 @@ export default function BoardPage() {
     const q = search.trim().toLowerCase();
     return allItems.filter((it) => {
       if (q && !itemText(it).includes(q)) return false;
-      if (selectedTags.length && !selectedTags.some((t) => it.tags.includes(t))) return false;
-      if (selectedPriorities.length && !selectedPriorities.includes(it.priority)) return false;
+      if (showTags && selectedTags.length && !selectedTags.some((t) => it.tags.includes(t)))
+        return false;
+      if (showPriority && selectedPriorities.length && !selectedPriorities.includes(it.priority))
+        return false;
       return true;
     });
-  }, [allItems, search, selectedTags, selectedPriorities]);
+  }, [allItems, search, selectedTags, selectedPriorities, showTags, showPriority]);
 
   const activeCount =
-    (search.trim() ? 1 : 0) + selectedTags.length + selectedPriorities.length;
+    (search.trim() ? 1 : 0) +
+    (showTags ? selectedTags.length : 0) +
+    (showPriority ? selectedPriorities.length : 0);
 
   function toggleTag(t: string) {
     setSelectedTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
@@ -108,6 +126,8 @@ export default function BoardPage() {
         onTogglePriority={togglePriority}
         onClear={clearFilters}
         activeCount={activeCount}
+        showTags={showTags}
+        showPriority={showPriority}
       >
         <div className="inline-flex rounded-lg border p-0.5">
           <Button

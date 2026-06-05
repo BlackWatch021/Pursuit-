@@ -1,5 +1,6 @@
 "use client";
 
+import { BoardSwitcher } from "@/components/app/board-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { UserMenu } from "@/components/app/user-menu";
 import { Logo } from "@/components/brand/logo";
@@ -23,6 +24,10 @@ export function AppSidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col gap-2 p-3">
       <div className="px-2 py-3">
         <Logo />
+      </div>
+
+      <div className="px-1 pb-1">
+        <BoardSwitcher />
       </div>
 
       <nav className="flex flex-1 flex-col gap-1">

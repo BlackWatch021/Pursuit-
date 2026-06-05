@@ -52,11 +52,19 @@ const fieldInput = z.object({
   options: z.array(z.string()).optional(),
 });
 
+const boardLabelFields = {
+  titleLabel: z.string().min(1).max(40).optional(),
+  dateLabel: z.string().min(1).max(40).optional(),
+  showTags: z.boolean().optional(),
+  showPriority: z.boolean().optional(),
+};
+
 export const createBoardSchema = z.object({
   name: z.string().min(1),
   color: z.string().optional(),
   stages: z.array(stageInput).optional(),
   customFields: z.array(fieldInput).optional(),
+  ...boardLabelFields,
 });
 
 export const updateBoardSchema = z.object({
@@ -64,6 +72,7 @@ export const updateBoardSchema = z.object({
   color: z.string().optional(),
   stages: z.array(stageInput).optional(),
   customFields: z.array(fieldInput).optional(),
+  ...boardLabelFields,
 });
 
 export const deleteStageSchema = z.object({

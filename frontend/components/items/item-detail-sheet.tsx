@@ -244,19 +244,21 @@ export function ItemDetailSheet({
                   </SelectContent>
                 </Select>
 
-                <Select
-                  value={form.priority}
-                  onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Priority }))}
-                >
-                  <SelectTrigger className="h-8 w-auto">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="low">Low priority</SelectItem>
-                    <SelectItem value="medium">Medium priority</SelectItem>
-                    <SelectItem value="high">High priority</SelectItem>
-                  </SelectContent>
-                </Select>
+                {board.showPriority && (
+                  <Select
+                    value={form.priority}
+                    onValueChange={(v) => setForm((p) => ({ ...p, priority: v as Priority }))}
+                  >
+                    <SelectTrigger className="h-8 w-auto">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="low">Low priority</SelectItem>
+                      <SelectItem value="medium">Medium priority</SelectItem>
+                      <SelectItem value="high">High priority</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
             </div>
 
@@ -271,7 +273,7 @@ export function ItemDetailSheet({
               <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto p-5">
                 <TabsContent value="details" className="mt-0 space-y-4">
                   <div className="space-y-2">
-                    <Label className="text-xs text-muted-foreground">Applied date</Label>
+                    <Label className="text-xs text-muted-foreground">{board.dateLabel}</Label>
                     <Input
                       type="date"
                       value={form.primaryDate}
@@ -333,15 +335,17 @@ export function ItemDetailSheet({
                     })}
                   </div>
 
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">Tags</Label>
-                    <Input
-                      className="h-9"
-                      value={form.tags}
-                      onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))}
-                      placeholder="comma, separated"
-                    />
-                  </div>
+                  {board.showTags && (
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground">Tags</Label>
+                      <Input
+                        className="h-9"
+                        value={form.tags}
+                        onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))}
+                        placeholder="comma, separated"
+                      />
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="activity" className="mt-0">

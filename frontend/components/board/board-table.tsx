@@ -64,8 +64,8 @@ export function BoardTable({
       },
     }));
 
-    return [
-      { key: "title", label: "Title", sortValue: (it) => it.title.toLowerCase() },
+    const cols: Column[] = [
+      { key: "title", label: board.titleLabel, sortValue: (it) => it.title.toLowerCase() },
       {
         key: "stage",
         label: "Stage",
@@ -75,22 +75,27 @@ export function BoardTable({
       ...fieldCols,
       {
         key: "date",
-        label: "Applied",
+        label: board.dateLabel,
         sortValue: (it) => it.primaryDate,
       },
-      {
+    ];
+    if (board.showPriority) {
+      cols.push({
         key: "priority",
         label: "Priority",
         sortValue: (it) => PRIORITY_RANK[it.priority],
         numeric: true,
-      },
-      {
+      });
+    }
+    if (board.showTags) {
+      cols.push({
         key: "tags",
         label: "Tags",
         sortValue: (it) => it.tags.join(",").toLowerCase(),
-      },
-    ];
-  }, [board.customFields, stageOrder]);
+      });
+    }
+    return cols;
+  }, [board, stageOrder]);
 
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<SortDir>("desc");
@@ -230,34 +235,38 @@ export function BoardTable({
                 <td className="whitespace-nowrap border-b px-3 py-2 text-muted-foreground">
                   {fmtDateShort(it.primaryDate)}
                 </td>
-                <td className="whitespace-nowrap border-b px-3 py-2">
-                  <span className="inline-flex items-center gap-1.5">
-                    <span className={cn("h-2 w-2 rounded-full", pri.dot)} />
-                    {pri.label}
-                  </span>
-                </td>
-                <td className="border-b px-3 py-2">
-                  {it.tags.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {it.tags.slice(0, 4).map((t) => (
-                        <Badge
-                          key={t}
-                          variant="secondary"
-                          className="px-1.5 py-0 text-[10px] font-normal"
-                        >
-                          {t}
-                        </Badge>
-                      ))}
-                      {it.tags.length > 4 && (
-                        <span className="text-[10px] text-muted-foreground">
-                          +{it.tags.length - 4}
-                        </span>
-                      )}
-                    </div>
-                  ) : (
-                    <span className="text-muted-foreground">—</span>
-                  )}
-                </td>
+                {board.showPriority && (
+                  <td className="whitespace-nowrap border-b px-3 py-2">
+                    <span className="inline-flex items-center gap-1.5">
+                      <span className={cn("h-2 w-2 rounded-full", pri.dot)} />
+                      {pri.label}
+                    </span>
+                  </td>
+                )}
+                {board.showTags && (
+                  <td className="border-b px-3 py-2">
+                    {it.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {it.tags.slice(0, 4).map((t) => (
+                          <Badge
+                            key={t}
+                            variant="secondary"
+                            className="px-1.5 py-0 text-[10px] font-normal"
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                        {it.tags.length > 4 && (
+                          <span className="text-[10px] text-muted-foreground">
+                            +{it.tags.length - 4}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </td>
+                )}
               </tr>
             );
           })}
