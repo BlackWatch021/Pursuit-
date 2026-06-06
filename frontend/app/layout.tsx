@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Pursuit — Job Application Tracker",
-  description: "Track your job applications, stages, interviews and follow-ups in one place.",
+  title: "Pursuit — Personal Tracker",
+  description: "Track anything — jobs, courses, projects — with custom stages, fields, reminders and stats.",
 };
 
 export default function RootLayout({

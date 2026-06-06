@@ -1,5 +1,6 @@
 "use client";
 
+import type { ItemNoun } from "@/lib/board-utils";
 import { cn } from "@/lib/utils";
 
 const MONTHS = [
@@ -32,11 +33,13 @@ export function Heatmap({
   year,
   onSelectDate,
   selected,
+  noun,
 }: {
   data: { date: string; count: number }[];
   year: number;
   onSelectDate?: (date: string) => void;
   selected?: string | null;
+  noun: ItemNoun;
 }) {
   const counts = new Map(data.map((d) => [d.date, d.count]));
   const max = Math.max(1, ...data.map((d) => d.count));
@@ -94,7 +97,7 @@ export function Heatmap({
                       key={key}
                       type="button"
                       onClick={() => onSelectDate?.(key)}
-                      title={`${count} application${count === 1 ? "" : "s"} · ${key}`}
+                      title={`${count} ${count === 1 ? noun.lower : noun.lowerPlural} · ${key}`}
                       className={cn(
                         "h-3 w-3 rounded-[3px] transition-transform hover:ring-1 hover:ring-ring",
                         LEVEL_CLASSES[levelOf(count, max)],

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import { BellOff, Trash2 } from "lucide-react";
 
 function refTitle(r: Reminder): string {
-  return typeof r.itemId === "object" && r.itemId ? r.itemId.title : "Application";
+  return typeof r.itemId === "object" && r.itemId ? r.itemId.title : "Item";
 }
 
 function ReminderRow({ r }: { r: Reminder }) {
@@ -77,7 +77,7 @@ export default function RemindersPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Reminders" description="Your follow-ups across every application." />
+      <PageHeader title="Reminders" description="Your follow-ups across every board." />
 
       <div className="space-y-6 p-4 sm:p-6">
         {isLoading ? (
@@ -90,7 +90,7 @@ export default function RemindersPage() {
             <div>
               <p className="font-medium">You&apos;re all caught up</p>
               <p className="text-sm text-muted-foreground">
-                Add follow-up reminders from any application&apos;s detail panel.
+                Add follow-up reminders from any item&apos;s detail panel.
               </p>
             </div>
           </div>

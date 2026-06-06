@@ -1,7 +1,7 @@
 "use client";
 
 import { useReorderItems } from "@/hooks/use-items";
-import { sortedStages } from "@/lib/board-utils";
+import { itemNoun, sortedStages } from "@/lib/board-utils";
 import type { Board, Item } from "@/lib/types";
 import {
   closestCorners,
@@ -35,6 +35,7 @@ export function KanbanBoard({
   dndDisabled?: boolean;
 }) {
   const stages = useMemo(() => sortedStages(board), [board]);
+  const noun = itemNoun(board);
   const reorder = useReorderItems();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [dragColor, setDragColor] = useState<string | undefined>(undefined);
@@ -200,6 +201,7 @@ export function KanbanBoard({
               stage={stage}
               itemIds={colItems.map((i) => i._id)}
               onAdd={() => onAddInStage(stage.id)}
+              emptyLabel={noun.lowerPlural}
             >
               {colItems.map((item) => (
                 <BoardCard

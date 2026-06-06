@@ -52,8 +52,10 @@ export function useUpdateBoard(boardId: string) {
           | "customFields"
           | "titleLabel"
           | "dateLabel"
+          | "itemLabel"
           | "showTags"
           | "showPriority"
+          | "finalStageId"
         >
       >,
     ) => api.patch<{ board: Board }>(`/api/boards/${boardId}`, data),

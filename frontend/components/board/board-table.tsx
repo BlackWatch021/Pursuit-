@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { sortedStages, stageMap } from "@/lib/board-utils";
+import { itemNoun, sortedStages, stageMap } from "@/lib/board-utils";
 import { fmtDateShort } from "@/lib/format";
 import type { Board, Item, Priority } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -43,6 +43,7 @@ export function BoardTable({
   onRowClick: (id: string) => void;
 }) {
   const stages = stageMap(board);
+  const noun = itemNoun(board);
   const stageOrder = useMemo(() => {
     const order = new Map<string, number>();
     sortedStages(board).forEach((s, i) => order.set(s.id, i));
@@ -159,7 +160,7 @@ export function BoardTable({
                 colSpan={columns.length}
                 className="border-b px-3 py-10 text-center text-sm text-muted-foreground"
               >
-                No applications yet.
+                No {noun.lowerPlural} yet.
               </td>
             </tr>
           )}

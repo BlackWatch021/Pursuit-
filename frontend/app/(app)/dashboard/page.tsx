@@ -9,13 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useUpdateReminder } from "@/hooks/use-reminders";
+import { itemNoun } from "@/lib/board-utils";
 import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Reminder, Stage } from "@/lib/types";
 import { ArrowRight, Bell, Briefcase, Pencil, Plus, Sparkles, StickyNote } from "lucide-react";
 import Link from "next/link";
 
 function refTitle(ref: Activity["itemId"] | Reminder["itemId"]): string {
-  return typeof ref === "object" && ref ? ref.title : "Application";
+  return typeof ref === "object" && ref ? ref.title : "Item";
 }
 
 function ActivityLine({ a, stages }: { a: Activity; stages: Stage[] }) {
@@ -68,17 +69,18 @@ function ActivityLine({ a, stages }: { a: Activity; stages: Stage[] }) {
 }
 
 export default function DashboardPage() {
-  const { activeBoardId } = useActiveBoard();
+  const { activeBoard, activeBoardId } = useActiveBoard();
   const { data, isLoading } = useDashboard(activeBoardId ?? undefined);
   const updateReminder = useUpdateReminder();
+  const noun = itemNoun(activeBoard);
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Dashboard" description="Your job hunt at a glance.">
+      <PageHeader title="Dashboard" description={`Your ${noun.lowerPlural} at a glance.`}>
         <Button asChild>
           <Link href="/board">
             <Plus className="mr-1.5 h-4 w-4" />
-            New application
+            New {noun.lower}
           </Link>
         </Button>
       </PageHeader>
@@ -99,29 +101,29 @@ export default function DashboardPage() {
               <Briefcase className="h-6 w-6" />
             </span>
             <div>
-              <p className="font-medium">No applications yet</p>
+              <p className="font-medium">No {noun.lowerPlural} yet</p>
               <p className="text-sm text-muted-foreground">
-                Add your first application to start tracking your pipeline.
+                Add your first {noun.lower} to start tracking your pipeline.
               </p>
             </div>
             <Button asChild>
               <Link href="/board">
                 <Plus className="mr-1.5 h-4 w-4" />
-                Add your first application
+                Add your first {noun.lower}
               </Link>
             </Button>
           </div>
         ) : (
           <>
-            <StatCards stats={data.stats} />
+            <StatCards stats={data.stats} itemsLabel={noun.lowerPlural} />
 
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="rounded-xl border bg-card p-5 lg:col-span-2">
-                <h2 className="mb-4 text-sm font-medium">Pipeline funnel</h2>
+                <h2 className="mb-4 text-sm font-medium">{noun.plural} by stage</h2>
                 <Funnel steps={data.funnel} />
               </div>
               <div className="rounded-xl border bg-card p-5">
-                <h2 className="mb-4 text-sm font-medium">Applications per week</h2>
+                <h2 className="mb-4 text-sm font-medium">{noun.plural} per week</h2>
                 <WeeklyChart data={data.weeks} />
               </div>
             </div>

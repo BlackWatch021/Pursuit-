@@ -9,6 +9,7 @@ import { NewItemDialog } from "@/components/board/new-item-dialog";
 import { ItemDetailSheet } from "@/components/items/item-detail-sheet";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/hooks/use-items";
+import { itemNoun } from "@/lib/board-utils";
 import type { Item, Priority } from "@/lib/types";
 import { LayoutGrid, Loader2, Plus, Table as TableIcon } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -95,14 +96,16 @@ export default function BoardPage() {
     );
   }
 
+  const noun = itemNoun(board);
+
   return (
     <div className="flex h-full flex-col">
       <PageHeader
         title={board.name}
         description={
           view === "board"
-            ? "Drag applications between stages to update them."
-            : "Click a row to open and edit an application."
+            ? `Drag ${noun.lowerPlural} between stages to update them.`
+            : `Click a row to open and edit ${/^[aeiou]/i.test(noun.lower) ? "an" : "a"} ${noun.lower}.`
         }
       >
         <Button
@@ -112,7 +115,7 @@ export default function BoardPage() {
           }}
         >
           <Plus className="mr-1.5 h-4 w-4" />
-          New application
+          New {noun.lower}
         </Button>
       </PageHeader>
 
@@ -164,7 +167,7 @@ export default function BoardPage() {
             </div>
           ) : activeCount > 0 && filtered.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <p className="text-sm text-muted-foreground">No applications match your filters.</p>
+              <p className="text-sm text-muted-foreground">No {noun.lowerPlural} match your filters.</p>
               <Button variant="outline" size="sm" onClick={clearFilters}>
                 Clear filters
               </Button>

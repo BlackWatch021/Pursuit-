@@ -2,10 +2,10 @@ import { Logo } from "@/components/brand/logo";
 import { Check } from "lucide-react";
 
 const highlights = [
-  "Track every application and what stage it's in",
-  "A calendar heatmap of where you applied, by day",
-  "Follow-up reminders so nothing slips",
-  "Your pipeline stats at a glance",
+  "Track anything on a board — jobs, courses, projects, and more",
+  "Custom stages and fields, tailored to each tracker",
+  "A calendar heatmap of your activity, day by day",
+  "Reminders and pipeline stats so nothing slips",
 ];
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
 
         <div className="relative max-w-md space-y-6">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">
-            Run your job hunt like a pipeline.
+            Track anything, stage by stage.
           </h2>
           <ul className="space-y-3 text-sm text-zinc-300">
             {highlights.map((h) => (
@@ -36,7 +36,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           </ul>
         </div>
 
-        <p className="relative text-xs text-zinc-500">Pursuit — your personal application tracker.</p>
+        <p className="relative text-xs text-zinc-500">Pursuit — your personal tracker for anything.</p>
       </div>
 
       {/* Form panel */}

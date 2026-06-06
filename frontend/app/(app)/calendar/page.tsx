@@ -9,6 +9,7 @@ import { RecentActivity } from "@/components/calendar/recent-activity";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCalendar } from "@/hooks/use-dashboard";
+import { itemNoun } from "@/lib/board-utils";
 import { cn } from "@/lib/utils";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useState } from "react";
@@ -20,8 +21,9 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(now.getUTCMonth());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
-  const { activeBoardId } = useActiveBoard();
+  const { activeBoard, activeBoardId } = useActiveBoard();
   const { data, isLoading } = useCalendar(year, activeBoardId ?? undefined);
+  const noun = itemNoun(activeBoard);
 
   const counts = new Map((data?.heatmap ?? []).map((d) => [d.date, d.count]));
   const total = (data?.heatmap ?? []).reduce((sum, d) => sum + d.count, 0);
@@ -59,7 +61,10 @@ export default function CalendarPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Calendar" description={`${total} application${total === 1 ? "" : "s"} in ${year}`}>
+      <PageHeader
+        title="Calendar"
+        description={`${total} ${total === 1 ? noun.lower : noun.lowerPlural} in ${year}`}
+      >
         <div className="inline-flex rounded-lg border p-0.5">
           <Button
             variant={view === "heatmap" ? "secondary" : "ghost"}
@@ -103,9 +108,11 @@ export default function CalendarPage() {
                   year={year}
                   onSelectDate={setSelectedDate}
                   selected={selectedDate}
+                  noun={noun}
                 />
                 <p className="mt-4 text-xs text-muted-foreground">
-                  Busiest day: {busiest} application{busiest === 1 ? "" : "s"}. Click a day for details.
+                  Busiest day: {busiest} {busiest === 1 ? noun.lower : noun.lowerPlural}. Click a day
+                  for details.
                 </p>
               </div>
             ) : (
@@ -130,6 +137,7 @@ export default function CalendarPage() {
                 events={dayEvents}
                 stages={data.stages}
                 onClose={() => setSelectedDate(null)}
+                noun={noun}
               />
             )}
 

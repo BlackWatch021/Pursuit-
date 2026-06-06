@@ -39,31 +39,12 @@ router.get(
     for (const s of board.stages) perStage[s.id] = 0;
     for (const it of items) if (perStage[it.stageId] !== undefined) perStage[it.stageId]++;
 
-    // "reached" = items that ever entered a stage (activity history ∪ current stage)
-    const reached: Record<string, number> = {};
-    for (const s of stagesByOrder) {
-      const movedIds = (
-        await Activity.distinct('itemId', { userId, type: 'stage_change', toStageId: s.id })
-      ).map(String);
-      const ids = new Set(movedIds);
-      for (const it of items) if (it.stageId === s.id) ids.add(String(it._id));
-      reached[s.id] = ids.size;
-    }
-
     const funnel = stagesByOrder.map((s) => ({
       stageId: s.id,
       name: s.name,
       color: s.color,
       current: perStage[s.id] ?? 0,
-      reached: reached[s.id] ?? 0,
     }));
-
-    const reachedByName = (name: string) => {
-      const s = stagesByOrder.find((x) => x.name.toLowerCase() === name);
-      return s ? reached[s.id] ?? 0 : 0;
-    };
-    const applied = reachedByName('applied');
-    const rate = (n: number) => (applied > 0 ? Math.round((n / applied) * 100) : 0);
 
     // applications per week (last 12 weeks)
     const weeks: { week: string; count: number }[] = [];
@@ -81,18 +62,23 @@ router.get(
       if (idx !== undefined) weeks[idx].count++;
     }
 
-    const terminal = new Set(['accepted', 'rejected']);
-    const terminalCount = stagesByOrder
-      .filter((s) => terminal.has(s.name.toLowerCase()))
-      .reduce((sum, s) => sum + (perStage[s.id] ?? 0), 0);
-
+    // Generic, board-agnostic stats (no hard-coded stage names). "Active" =
+    // not yet in the final stage; "completion" = share currently in it.
     const total = items.length;
+    const lastStage = stagesByOrder[stagesByOrder.length - 1];
+    // Use the board's chosen final stage if it's valid, else the last by order.
+    const finalStageId =
+      board.finalStageId && stagesByOrder.some((s) => s.id === board.finalStageId)
+        ? board.finalStageId
+        : lastStage?.id;
+    const inFinal = finalStageId ? perStage[finalStageId] ?? 0 : 0;
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const addedThisWeek = items.filter((it) => new Date(it.createdAt) >= weekAgo).length;
     const stats = {
       total,
-      active: total - terminalCount,
-      responseRate: rate(reachedByName('screening')),
-      interviewRate: rate(reachedByName('interview')),
-      offerRate: rate(reachedByName('offer')),
+      active: total - inFinal,
+      addedThisWeek,
+      completionRate: total > 0 ? Math.round((inFinal / total) * 100) : 0,
     };
 
     const reminders = await Reminder.find({ userId, done: false })

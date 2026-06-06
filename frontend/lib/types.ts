@@ -41,8 +41,10 @@ export interface Board {
   customFields: CustomField[];
   titleLabel: string;
   dateLabel: string;
+  itemLabel: string;
   showTags: boolean;
   showPriority: boolean;
+  finalStageId?: string;
   isDefault: boolean;
   createdAt: string;
   updatedAt: string;
@@ -102,7 +104,6 @@ export interface FunnelStep {
   name: string;
   color: string;
   current: number;
-  reached: number;
 }
 
 export interface DashboardData {
@@ -110,9 +111,8 @@ export interface DashboardData {
   stats: {
     total: number;
     active: number;
-    responseRate: number;
-    interviewRate: number;
-    offerRate: number;
+    addedThisWeek: number;
+    completionRate: number;
   };
   perStage: Record<string, number>;
   funnel: FunnelStep[];

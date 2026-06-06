@@ -21,7 +21,7 @@ import {
 import { MultiSelect } from "@/components/multi-select";
 import { useCreateItem } from "@/hooks/use-items";
 import { ApiError } from "@/lib/api";
-import { sortedStages } from "@/lib/board-utils";
+import { itemNoun, sortedStages } from "@/lib/board-utils";
 import { dateOnlyToISO, todayDateOnly } from "@/lib/format";
 import type { Board, Priority } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ export function NewItemDialog({
   defaultStageId?: string;
 }) {
   const stages = sortedStages(board);
+  const noun = itemNoun(board);
   const create = useCreateItem();
 
   const [title, setTitle] = useState("");
@@ -89,10 +90,10 @@ export function NewItemDialog({
           .map((t) => t.trim())
           .filter(Boolean),
       });
-      toast.success("Application added");
+      toast.success(`${noun.singular} added`);
       onOpenChange(false);
     } catch (err) {
-      toast.error(err instanceof ApiError ? err.message : "Failed to add application");
+      toast.error(err instanceof ApiError ? err.message : `Failed to add ${noun.lower}`);
     }
   }
 
@@ -100,8 +101,8 @@ export function NewItemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>New application</DialogTitle>
-          <DialogDescription>Add a role you&apos;re tracking.</DialogDescription>
+          <DialogTitle>New {noun.lower}</DialogTitle>
+          <DialogDescription>Add a new {noun.lower} to {board.name}.</DialogDescription>
         </DialogHeader>
 
         <form onSubmit={onSubmit} className="space-y-4">
@@ -215,7 +216,7 @@ export function NewItemDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={create.isPending}>
-              {create.isPending ? "Adding…" : "Add application"}
+              {create.isPending ? "Adding…" : `Add ${noun.lower}`}
             </Button>
           </DialogFooter>
         </form>

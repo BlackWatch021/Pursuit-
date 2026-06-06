@@ -29,7 +29,7 @@ import {
   useItemReminders,
   useUpdateReminder,
 } from "@/hooks/use-reminders";
-import { sortedStages, stageMap } from "@/lib/board-utils";
+import { itemNoun, sortedStages, stageMap } from "@/lib/board-utils";
 import { dateOnlyToISO, fmtDate, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Board, Item, Priority } from "@/lib/types";
 import { ArrowRight, Bell, Pencil, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
@@ -109,6 +109,7 @@ export function ItemDetailSheet({
 
   const stages = sortedStages(board);
   const stageNames = stageMap(board);
+  const noun = itemNoun(board);
 
   const [form, setForm] = useState<FormState>({
     title: "",
@@ -183,7 +184,7 @@ export function ItemDetailSheet({
   async function onDelete() {
     if (!item) return;
     await del.mutateAsync(item._id);
-    toast.success("Application deleted");
+    toast.success(`${noun.singular} deleted`);
     onOpenChange(false);
   }
 
@@ -204,13 +205,13 @@ export function ItemDetailSheet({
           // exit animation clean — no blue skeleton flash.
           isLoading && open ? (
             <div className="space-y-4 p-6">
-              <SheetTitle className="sr-only">Application details</SheetTitle>
+              <SheetTitle className="sr-only">{noun.singular} details</SheetTitle>
               <Skeleton className="h-7 w-2/3" />
               <Skeleton className="h-9 w-full" />
               <Skeleton className="h-40 w-full" />
             </div>
           ) : (
-            <SheetTitle className="sr-only">Application details</SheetTitle>
+            <SheetTitle className="sr-only">{noun.singular} details</SheetTitle>
           )
         ) : (
           <>
@@ -409,6 +410,7 @@ export function ItemDetailSheet({
 
 function ActivityRow({ a, board }: { a: Activity; board: Board }) {
   const stages = stageMap(board);
+  const noun = itemNoun(board);
   const time = fmtRelative(a.createdAt);
 
   if (a.type === "note") {
@@ -470,7 +472,7 @@ function ActivityRow({ a, board }: { a: Activity; board: Board }) {
         <Sparkles className="h-3.5 w-3.5" />
       </span>
       <div className="min-w-0 flex-1 pt-1 text-sm">
-        <span className="text-muted-foreground">Application created</span>
+        <span className="text-muted-foreground">{noun.singular} created</span>
         <p className="mt-0.5 text-xs text-muted-foreground">{time}</p>
       </div>
     </li>
