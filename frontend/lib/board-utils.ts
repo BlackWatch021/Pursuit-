@@ -24,3 +24,22 @@ export const PRIORITY_LABELS: Record<string, string> = {
   medium: "Medium",
   high: "High",
 };
+
+export interface ItemNoun {
+  singular: string; // "Application"
+  plural: string; // "Applications"
+  lower: string; // "application"
+  lowerPlural: string; // "applications"
+}
+
+/** The per-board word for an item ("Application", "Book", "Task", …). */
+export function itemNoun(board?: Pick<Board, "itemLabel"> | null): ItemNoun {
+  const singular = (board?.itemLabel || "Item").trim() || "Item";
+  const plural = `${singular}s`;
+  return {
+    singular,
+    plural,
+    lower: singular.toLowerCase(),
+    lowerPlural: plural.toLowerCase(),
+  };
+}

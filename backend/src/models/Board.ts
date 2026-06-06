@@ -34,8 +34,12 @@ const boardSchema = new Schema(
     // built-in tags/priority. Generic defaults so non-job boards read naturally.
     titleLabel: { type: String, default: 'Title' },
     dateLabel: { type: String, default: 'Date' },
+    itemLabel: { type: String, default: 'Item' },
     showTags: { type: Boolean, default: true },
     showPriority: { type: Boolean, default: true },
+    // Stage that represents "done" — drives the dashboard completion/active stats.
+    // Falls back to the last stage by order when unset.
+    finalStageId: { type: String },
     isDefault: { type: Boolean, default: false },
   },
   { timestamps: true },

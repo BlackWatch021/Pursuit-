@@ -11,11 +11,13 @@ export function BoardColumn({
   itemIds,
   onAdd,
   children,
+  emptyLabel = "items",
 }: {
   stage: Stage;
   itemIds: string[];
   onAdd: () => void;
   children: React.ReactNode;
+  emptyLabel?: string;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: stage.id });
 
@@ -60,7 +62,7 @@ export function BoardColumn({
           {children}
           {itemIds.length === 0 && (
             <div className="rounded-md py-8 text-center text-xs text-muted-foreground/70">
-              No applications
+              No {emptyLabel}
             </div>
           )}
         </SortableContext>

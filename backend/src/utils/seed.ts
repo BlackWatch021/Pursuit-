@@ -50,6 +50,8 @@ export async function createDefaultBoard(userId: string): Promise<BoardDoc> {
     customFields,
     titleLabel: 'Company',
     dateLabel: 'Applied date',
+    itemLabel: 'Application',
+    finalStageId: stages.find((s) => s.name === 'Accepted')?.id,
     isDefault: true,
   });
 }

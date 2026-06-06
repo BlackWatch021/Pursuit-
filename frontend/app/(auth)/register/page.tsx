@@ -35,7 +35,7 @@ export default function RegisterPage() {
     <div className="space-y-6">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-        <p className="text-sm text-muted-foreground">Start tracking your job hunt in minutes.</p>
+        <p className="text-sm text-muted-foreground">Set up your first board in minutes.</p>
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">

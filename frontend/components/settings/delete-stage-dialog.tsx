@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/select";
 import { useDeleteStage } from "@/hooks/use-boards";
 import { ApiError } from "@/lib/api";
+import { itemNoun } from "@/lib/board-utils";
 import type { Board, Stage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { useEffect, useState } from "react";
@@ -37,6 +38,7 @@ export function DeleteStageDialog({
   onOpenChange: (o: boolean) => void;
 }) {
   const del = useDeleteStage(board._id);
+  const noun = itemNoun(board);
   const otherStages = board.stages.filter((s) => s.id !== stage?.id);
   const [mode, setMode] = useState<"move" | "delete">("move");
   const [target, setTarget] = useState<string>("");
@@ -59,7 +61,7 @@ export function DeleteStageDialog({
     try {
       if (!empty && mode === "move") {
         if (!target) {
-          toast.error("Pick a stage to move applications to");
+          toast.error(`Pick a stage to move ${noun.lowerPlural} to`);
           return;
         }
         await del.mutateAsync({ stageId: stage.id, strategy: "move", targetStageId: target });
@@ -81,7 +83,7 @@ export function DeleteStageDialog({
           <DialogDescription>
             {empty
               ? "This stage is empty. It will be removed from your board."
-              : `This stage has ${count} application${count === 1 ? "" : "s"}. What should happen to ${count === 1 ? "it" : "them"}?`}
+              : `This stage has ${count} ${count === 1 ? noun.lower : noun.lowerPlural}. What should happen to ${count === 1 ? "it" : "them"}?`}
           </DialogDescription>
         </DialogHeader>
 
@@ -106,7 +108,7 @@ export function DeleteStageDialog({
                 >
                   {mode === "move" && <span className="h-2 w-2 rounded-full bg-primary" />}
                 </span>
-                <span className="text-sm font-medium">Move applications to another stage</span>
+                <span className="text-sm font-medium">Move {noun.lowerPlural} to another stage</span>
               </div>
               {mode === "move" && (
                 <div className="mt-3 pl-6" onClick={(e) => e.stopPropagation()}>
@@ -146,7 +148,7 @@ export function DeleteStageDialog({
                   {mode === "delete" && <span className="h-2 w-2 rounded-full bg-destructive" />}
                 </span>
                 <span className="text-sm font-medium">
-                  Delete {count} application{count === 1 ? "" : "s"} permanently
+                  Delete {count} {count === 1 ? noun.lower : noun.lowerPlural} permanently
                 </span>
               </div>
               <p className="mt-1 pl-6 text-xs text-muted-foreground">
@@ -171,7 +173,7 @@ export function DeleteStageDialog({
                 ? "Delete stage"
                 : mode === "move"
                   ? "Move & delete stage"
-                  : "Delete applications & stage"}
+                  : `Delete ${noun.lowerPlural} & stage`}
           </Button>
         </DialogFooter>
       </DialogContent>

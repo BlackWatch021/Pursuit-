@@ -1,12 +1,18 @@
 import type { DashboardData } from "@/lib/types";
-import { Activity, Briefcase, MessagesSquare, Trophy } from "lucide-react";
+import { Activity, CalendarPlus, CheckCircle2, Layers } from "lucide-react";
 
-export function StatCards({ stats }: { stats: DashboardData["stats"] }) {
+export function StatCards({
+  stats,
+  itemsLabel = "items",
+}: {
+  stats: DashboardData["stats"];
+  itemsLabel?: string;
+}) {
   const cards = [
-    { label: "Total applications", value: String(stats.total), icon: Briefcase },
-    { label: "Active in pipeline", value: String(stats.active), icon: Activity },
-    { label: "Interview rate", value: `${stats.interviewRate}%`, icon: MessagesSquare },
-    { label: "Offer rate", value: `${stats.offerRate}%`, icon: Trophy },
+    { label: `Total ${itemsLabel}`, value: String(stats.total), icon: Layers },
+    { label: "Active", value: String(stats.active), icon: Activity },
+    { label: "Added this week", value: String(stats.addedThisWeek), icon: CalendarPlus },
+    { label: "Completion rate", value: `${stats.completionRate}%`, icon: CheckCircle2 },
   ];
 
   return (

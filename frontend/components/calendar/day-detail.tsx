@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import type { ItemNoun } from "@/lib/board-utils";
 import { fmtDate } from "@/lib/format";
 import type { CalendarEvent, CalendarItem, Stage } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -13,12 +14,14 @@ export function DayDetail({
   events,
   stages,
   onClose,
+  noun,
 }: {
   date: string;
   items: CalendarItem[];
   events: CalendarEvent[];
   stages: Stage[];
   onClose: () => void;
+  noun: ItemNoun;
 }) {
   const stageOf = (id: string) => stages.find((s) => s.id === id);
 
@@ -28,7 +31,7 @@ export function DayDetail({
         <div>
           <h2 className="text-sm font-medium">{fmtDate(date)}</h2>
           <p className="text-xs text-muted-foreground">
-            {items.length} application{items.length === 1 ? "" : "s"}
+            {items.length} {items.length === 1 ? noun.lower : noun.lowerPlural}
             {events.length > 0 &&
               ` · ${events.length} reminder${events.length === 1 ? "" : "s"}`}
           </p>

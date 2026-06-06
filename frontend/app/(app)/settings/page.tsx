@@ -27,6 +27,7 @@ import {
 import { useDeleteBoard, useUpdateBoard } from "@/hooks/use-boards";
 import { useItems } from "@/hooks/use-items";
 import { ApiError } from "@/lib/api";
+import { itemNoun } from "@/lib/board-utils";
 import { FIELD_TYPE_LABELS, FIELD_TYPE_VALUES } from "@/lib/constants";
 import type { Board, CustomField, FieldType, Stage, User } from "@/lib/types";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
@@ -266,6 +267,13 @@ function AppearanceSection() {
   );
 }
 
+/** The board's chosen final stage, or the last stage by order when unset/stale. */
+function effectiveFinalStage(board: Board): string {
+  const ordered = [...board.stages].sort((a, b) => a.order - b.order);
+  const last = ordered[ordered.length - 1]?.id ?? "";
+  return ordered.some((s) => s.id === board.finalStageId) ? (board.finalStageId as string) : last;
+}
+
 function BoardSection({ board }: { board: Board }) {
   const update = useUpdateBoard(board._id);
   const deleteBoard = useDeleteBoard();
@@ -274,8 +282,10 @@ function BoardSection({ board }: { board: Board }) {
   const [color, setColor] = useState(board.color);
   const [titleLabel, setTitleLabel] = useState(board.titleLabel);
   const [dateLabel, setDateLabel] = useState(board.dateLabel);
+  const [itemLabel, setItemLabel] = useState(board.itemLabel);
   const [showTags, setShowTags] = useState(board.showTags);
   const [showPriority, setShowPriority] = useState(board.showPriority);
+  const [finalStageId, setFinalStageId] = useState(() => effectiveFinalStage(board));
   const [stages, setStages] = useState<Stage[]>(board.stages.map((s) => ({ ...s })));
   const [fields, setFields] = useState<CustomField[]>(board.customFields.map((f) => ({ ...f })));
   const [deletingBoard, setDeletingBoard] = useState(false);
@@ -291,8 +301,10 @@ function BoardSection({ board }: { board: Board }) {
     setColor(board.color);
     setTitleLabel(board.titleLabel);
     setDateLabel(board.dateLabel);
+    setItemLabel(board.itemLabel);
     setShowTags(board.showTags);
     setShowPriority(board.showPriority);
+    setFinalStageId(effectiveFinalStage(board));
     setStages(board.stages.map((s) => ({ ...s })));
     setFields(board.customFields.map((f) => ({ ...f })));
   }
@@ -374,13 +386,16 @@ function BoardSection({ board }: { board: Board }) {
     update.mutate({ customFields: cleaned }, { onSuccess: () => toast.success("Fields saved") });
   }
 
+  const noun = itemNoun(board);
   const metaDirty =
     name !== board.name ||
     color !== board.color ||
     titleLabel !== board.titleLabel ||
     dateLabel !== board.dateLabel ||
+    itemLabel !== board.itemLabel ||
     showTags !== board.showTags ||
-    showPriority !== board.showPriority;
+    showPriority !== board.showPriority ||
+    finalStageId !== effectiveFinalStage(board);
 
   return (
     <div className="space-y-6">
@@ -400,8 +415,10 @@ function BoardSection({ board }: { board: Board }) {
                   color,
                   titleLabel: titleLabel.trim() || "Title",
                   dateLabel: dateLabel.trim() || "Date",
+                  itemLabel: itemLabel.trim() || "Item",
                   showTags,
                   showPriority,
+                  finalStageId,
                 },
                 { onSuccess: () => toast.success("Board saved") },
               )
@@ -422,7 +439,21 @@ function BoardSection({ board }: { board: Board }) {
           <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 border-t pt-3">
+        <div className="space-y-1.5 border-t pt-3">
+          <Label className="text-xs text-muted-foreground">Name for one entry</Label>
+          <Input
+            value={itemLabel}
+            onChange={(e) => setItemLabel(e.target.value)}
+            placeholder="Item"
+            className="h-9"
+          />
+          <p className="text-xs text-muted-foreground">
+            What you call a single entry. <span className="italic">e.g. Application, Book, Task</span>{" "}
+            — used in buttons and headings.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-muted-foreground">Title field label</Label>
             <Input
@@ -441,6 +472,28 @@ function BoardSection({ board }: { board: Board }) {
               className="h-9"
             />
           </div>
+        </div>
+
+        <div className="space-y-1.5 border-t pt-3">
+          <Label className="text-xs text-muted-foreground">Final stage</Label>
+          <Select value={finalStageId} onValueChange={setFinalStageId}>
+            <SelectTrigger className="h-9">
+              <SelectValue placeholder="Last stage" />
+            </SelectTrigger>
+            <SelectContent>
+              {[...board.stages]
+                .sort((a, b) => a.order - b.order)
+                .map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.name}
+                  </SelectItem>
+                ))}
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            {noun.plural} here count as done — drives the dashboard&apos;s Completion &amp; Active
+            stats.
+          </p>
         </div>
 
         <div className="flex items-start justify-between gap-3 border-t pt-3">
@@ -469,7 +522,7 @@ function BoardSection({ board }: { board: Board }) {
           <p className="text-xs text-muted-foreground">
             {boards.length <= 1
               ? "Your only board can't be deleted."
-              : "Deleting a board removes all of its applications."}
+              : `Deleting a board removes all of its ${noun.lowerPlural}.`}
           </p>
           <Button
             variant="ghost"
@@ -551,7 +604,7 @@ function BoardSection({ board }: { board: Board }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-medium">Custom fields</h2>
-            <p className="text-xs text-muted-foreground">Extra details tracked per application.</p>
+            <p className="text-xs text-muted-foreground">Extra details tracked per {noun.lower}.</p>
           </div>
           <Button size="sm" onClick={saveFields} disabled={update.isPending || !fieldsDirty}>
             Save
@@ -654,7 +707,7 @@ function BoardSection({ board }: { board: Board }) {
           if (!o) setDeletingField(null);
         }}
         title={deletingField ? `Delete “${deletingField.name}”?` : "Delete field"}
-        description="This field is removed from your board. Saved values stay in the database but are hidden from your applications — click Save to apply."
+        description={`This field is removed from your board. Saved values stay in the database but are hidden from your ${noun.lowerPlural} — click Save to apply.`}
         confirmLabel="Remove field"
         destructive
         onConfirm={() => {
@@ -666,7 +719,7 @@ function BoardSection({ board }: { board: Board }) {
         open={deletingBoard}
         onOpenChange={setDeletingBoard}
         title={`Delete “${board.name}”?`}
-        description="This permanently deletes the board and all of its applications, activity, and reminders. This can't be undone."
+        description={`This permanently deletes the board and all of its ${noun.lowerPlural}, activity, and reminders. This can't be undone.`}
         confirmLabel="Delete board"
         destructive
         onConfirm={() => {

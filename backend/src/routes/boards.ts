@@ -63,8 +63,10 @@ router.patch(
     if (data.color !== undefined) update.color = data.color;
     if (data.titleLabel !== undefined) update.titleLabel = data.titleLabel;
     if (data.dateLabel !== undefined) update.dateLabel = data.dateLabel;
+    if (data.itemLabel !== undefined) update.itemLabel = data.itemLabel;
     if (data.showTags !== undefined) update.showTags = data.showTags;
     if (data.showPriority !== undefined) update.showPriority = data.showPriority;
+    if (data.finalStageId !== undefined) update.finalStageId = data.finalStageId;
     if (data.stages !== undefined)
       update.stages = data.stages.map((s) => ({ ...s, id: s.id || randomUUID() }));
     if (data.customFields !== undefined)
