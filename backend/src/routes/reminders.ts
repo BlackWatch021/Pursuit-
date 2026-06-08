@@ -14,7 +14,9 @@ router.get(
     const query: Record<string, unknown> = { userId: req.userId };
     if (itemId) query.itemId = itemId;
     if (scope === 'open') query.done = false;
-    const reminders = await Reminder.find(query).sort({ dueDate: 1 }).populate('itemId', 'title');
+    const reminders = await Reminder.find(query)
+      .sort({ dueDate: 1 })
+      .populate('itemId', 'title boardId');
     res.json({ reminders });
   }),
 );

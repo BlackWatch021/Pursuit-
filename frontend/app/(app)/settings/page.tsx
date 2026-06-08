@@ -72,7 +72,8 @@ function ProfileSection() {
 
   if (!user) return null;
 
-  const profileDirty = name.trim() !== user.name || image.trim() !== (user.image ?? "");
+  const profileDirty =
+    name.trim() !== user.name || image.trim() !== (user.image ?? "");
   const emailDirty = email.trim().toLowerCase() !== user.email;
 
   function saveProfile() {
@@ -85,7 +86,9 @@ function ProfileSection() {
       {
         onSuccess: () => toast.success("Profile updated"),
         onError: (e) =>
-          toast.error(e instanceof ApiError ? e.message : "Couldn't update profile"),
+          toast.error(
+            e instanceof ApiError ? e.message : "Couldn't update profile",
+          ),
       },
     );
   }
@@ -98,7 +101,10 @@ function ProfileSection() {
           toast.success("Email updated");
           setEmailPassword("");
         },
-        onError: (e) => toast.error(e instanceof ApiError ? e.message : "Couldn't update email"),
+        onError: (e) =>
+          toast.error(
+            e instanceof ApiError ? e.message : "Couldn't update email",
+          ),
       },
     );
   }
@@ -122,7 +128,9 @@ function ProfileSection() {
           setConfirmPw("");
         },
         onError: (e) =>
-          toast.error(e instanceof ApiError ? e.message : "Couldn't change password"),
+          toast.error(
+            e instanceof ApiError ? e.message : "Couldn't change password",
+          ),
       },
     );
   }
@@ -140,7 +148,9 @@ function ProfileSection() {
           </Avatar>
           <div className="min-w-0">
             <p className="truncate text-sm font-medium">{name || user.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{user.email}</p>
+            <p className="truncate text-xs text-muted-foreground">
+              {user.email}
+            </p>
           </div>
         </div>
         <div className="space-y-2">
@@ -179,7 +189,11 @@ function ProfileSection() {
         </div>
         <div className="space-y-2">
           <Label>Email address</Label>
-          <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </div>
         <div className="space-y-2">
           <Label>Current password</Label>
@@ -205,7 +219,9 @@ function ProfileSection() {
       <div className="space-y-4 rounded-xl border bg-card p-5">
         <div>
           <h2 className="text-sm font-medium">Password</h2>
-          <p className="text-xs text-muted-foreground">Use at least 6 characters.</p>
+          <p className="text-xs text-muted-foreground">
+            Use at least 6 characters.
+          </p>
         </div>
         <div className="space-y-2">
           <Label>Current password</Label>
@@ -219,7 +235,11 @@ function ProfileSection() {
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div className="space-y-2">
             <Label>New password</Label>
-            <Input type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} />
+            <Input
+              type="password"
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label>Confirm new</Label>
@@ -234,7 +254,9 @@ function ProfileSection() {
           <Button
             size="sm"
             onClick={savePassword}
-            disabled={updatePassword.isPending || !curPw || !newPw || !confirmPw}
+            disabled={
+              updatePassword.isPending || !curPw || !newPw || !confirmPw
+            }
           >
             Change password
           </Button>
@@ -271,7 +293,9 @@ function AppearanceSection() {
 function effectiveFinalStage(board: Board): string {
   const ordered = [...board.stages].sort((a, b) => a.order - b.order);
   const last = ordered[ordered.length - 1]?.id ?? "";
-  return ordered.some((s) => s.id === board.finalStageId) ? (board.finalStageId as string) : last;
+  return ordered.some((s) => s.id === board.finalStageId)
+    ? (board.finalStageId as string)
+    : last;
 }
 
 function BoardSection({ board }: { board: Board }) {
@@ -285,9 +309,15 @@ function BoardSection({ board }: { board: Board }) {
   const [itemLabel, setItemLabel] = useState(board.itemLabel);
   const [showTags, setShowTags] = useState(board.showTags);
   const [showPriority, setShowPriority] = useState(board.showPriority);
-  const [finalStageId, setFinalStageId] = useState(() => effectiveFinalStage(board));
-  const [stages, setStages] = useState<Stage[]>(board.stages.map((s) => ({ ...s })));
-  const [fields, setFields] = useState<CustomField[]>(board.customFields.map((f) => ({ ...f })));
+  const [finalStageId, setFinalStageId] = useState(() =>
+    effectiveFinalStage(board),
+  );
+  const [stages, setStages] = useState<Stage[]>(
+    board.stages.map((s) => ({ ...s })),
+  );
+  const [fields, setFields] = useState<CustomField[]>(
+    board.customFields.map((f) => ({ ...f })),
+  );
   const [deletingBoard, setDeletingBoard] = useState(false);
 
   // Re-sync local edits when the saved board object changes (after a save, a
@@ -312,7 +342,8 @@ function BoardSection({ board }: { board: Board }) {
   const { data: itemsData } = useItems(board._id);
   const countByStage = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const it of itemsData?.items ?? []) m[it.stageId] = (m[it.stageId] ?? 0) + 1;
+    for (const it of itemsData?.items ?? [])
+      m[it.stageId] = (m[it.stageId] ?? 0) + 1;
     return m;
   }, [itemsData]);
   const [deletingStage, setDeletingStage] = useState<Stage | null>(null);
@@ -331,7 +362,8 @@ function BoardSection({ board }: { board: Board }) {
     if (fields.length !== board.customFields.length) return true;
     return fields.some((f, i) => {
       const b = board.customFields[i];
-      if (!b || f.id !== b.id || f.name !== b.name || f.type !== b.type) return true;
+      if (!b || f.id !== b.id || f.name !== b.name || f.type !== b.type)
+        return true;
       return (f.options ?? []).join("") !== (b.options ?? []).join("");
     });
   }, [fields, board.customFields]);
@@ -380,10 +412,15 @@ function BoardSection({ board }: { board: Board }) {
       const isChoice = f.type === "select" || f.type === "multiselect";
       return {
         ...f,
-        options: isChoice ? (f.options ?? []).map((o) => o.trim()).filter(Boolean) : undefined,
+        options: isChoice
+          ? (f.options ?? []).map((o) => o.trim()).filter(Boolean)
+          : undefined,
       };
     });
-    update.mutate({ customFields: cleaned }, { onSuccess: () => toast.success("Fields saved") });
+    update.mutate(
+      { customFields: cleaned },
+      { onSuccess: () => toast.success("Fields saved") },
+    );
   }
 
   const noun = itemNoun(board);
@@ -404,7 +441,9 @@ function BoardSection({ board }: { board: Board }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-medium">Board</h2>
-            <p className="text-xs text-muted-foreground">Name and color of this tracker.</p>
+            <p className="text-xs text-muted-foreground">
+              Name and color of this tracker.
+            </p>
           </div>
           <Button
             size="sm"
@@ -436,11 +475,17 @@ function BoardSection({ board }: { board: Board }) {
             className="h-9 w-9 shrink-0 cursor-pointer rounded border bg-transparent"
             aria-label="Board color"
           />
-          <Input value={name} onChange={(e) => setName(e.target.value)} className="h-9" />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="h-9"
+          />
         </div>
 
         <div className="space-y-1.5 border-t pt-3">
-          <Label className="text-xs text-muted-foreground">Name for one entry</Label>
+          <Label className="text-xs text-muted-foreground">
+            What do you call each entry?
+          </Label>
           <Input
             value={itemLabel}
             onChange={(e) => setItemLabel(e.target.value)}
@@ -448,14 +493,18 @@ function BoardSection({ board }: { board: Board }) {
             className="h-9"
           />
           <p className="text-xs text-muted-foreground">
-            What you call a single entry. <span className="italic">e.g. Application, Book, Task</span>{" "}
-            — used in buttons and headings.
+            This word shows up in buttons and titles. Type{" "}
+            <span className="italic">Application</span> and you&apos;ll see{" "}
+            <span className="italic">&ldquo;New application&rdquo;</span>. Other
+            examples: Book, Task, Lead.
           </p>
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Title field label</Label>
+            <Label className="text-xs text-muted-foreground">
+              Title field label
+            </Label>
             <Input
               value={titleLabel}
               onChange={(e) => setTitleLabel(e.target.value)}
@@ -464,7 +513,9 @@ function BoardSection({ board }: { board: Board }) {
             />
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs text-muted-foreground">Date field label</Label>
+            <Label className="text-xs text-muted-foreground">
+              Date field label
+            </Label>
             <Input
               value={dateLabel}
               onChange={(e) => setDateLabel(e.target.value)}
@@ -491,8 +542,8 @@ function BoardSection({ board }: { board: Board }) {
             </SelectContent>
           </Select>
           <p className="text-xs text-muted-foreground">
-            {noun.plural} here count as done — drives the dashboard&apos;s Completion &amp; Active
-            stats.
+            {noun.plural} here count as done — drives the dashboard&apos;s
+            Completion &amp; Active stats.
           </p>
         </div>
 
@@ -542,9 +593,15 @@ function BoardSection({ board }: { board: Board }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-medium">Stages</h2>
-            <p className="text-xs text-muted-foreground">The columns on your board.</p>
+            <p className="text-xs text-muted-foreground">
+              The columns on your board.
+            </p>
           </div>
-          <Button size="sm" onClick={saveStages} disabled={update.isPending || !stagesDirty}>
+          <Button
+            size="sm"
+            onClick={saveStages}
+            disabled={update.isPending || !stagesDirty}
+          >
             Save
           </Button>
         </div>
@@ -555,7 +612,11 @@ function BoardSection({ board }: { board: Board }) {
                 type="color"
                 value={s.color}
                 onChange={(e) =>
-                  setStages((p) => p.map((x) => (x.id === s.id ? { ...x, color: e.target.value } : x)))
+                  setStages((p) =>
+                    p.map((x) =>
+                      x.id === s.id ? { ...x, color: e.target.value } : x,
+                    ),
+                  )
                 }
                 className="h-8 w-8 cursor-pointer rounded border bg-transparent"
                 aria-label="Stage color"
@@ -563,14 +624,28 @@ function BoardSection({ board }: { board: Board }) {
               <Input
                 value={s.name}
                 onChange={(e) =>
-                  setStages((p) => p.map((x) => (x.id === s.id ? { ...x, name: e.target.value } : x)))
+                  setStages((p) =>
+                    p.map((x) =>
+                      x.id === s.id ? { ...x, name: e.target.value } : x,
+                    ),
+                  )
                 }
                 className="h-9"
               />
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => move(i, -1)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => move(i, -1)}
+              >
                 <ChevronUp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => move(i, 1)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => move(i, 1)}
+              >
                 <ChevronDown className="h-4 w-4" />
               </Button>
               <Button
@@ -590,7 +665,12 @@ function BoardSection({ board }: { board: Board }) {
           onClick={() =>
             setStages((p) => [
               ...p,
-              { id: crypto.randomUUID(), name: "New stage", order: p.length, color: "#6366f1" },
+              {
+                id: crypto.randomUUID(),
+                name: "New stage",
+                order: p.length,
+                color: "#6366f1",
+              },
             ])
           }
         >
@@ -604,9 +684,15 @@ function BoardSection({ board }: { board: Board }) {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-sm font-medium">Custom fields</h2>
-            <p className="text-xs text-muted-foreground">Extra details tracked per {noun.lower}.</p>
+            <p className="text-xs text-muted-foreground">
+              Extra details tracked per {noun.lower}.
+            </p>
           </div>
-          <Button size="sm" onClick={saveFields} disabled={update.isPending || !fieldsDirty}>
+          <Button
+            size="sm"
+            onClick={saveFields}
+            disabled={update.isPending || !fieldsDirty}
+          >
             Save
           </Button>
         </div>
@@ -620,7 +706,9 @@ function BoardSection({ board }: { board: Board }) {
                     value={f.name}
                     onChange={(e) =>
                       setFields((p) =>
-                        p.map((x) => (x.id === f.id ? { ...x, name: e.target.value } : x)),
+                        p.map((x) =>
+                          x.id === f.id ? { ...x, name: e.target.value } : x,
+                        ),
                       )
                     }
                     className="h-9 flex-1"
@@ -629,7 +717,9 @@ function BoardSection({ board }: { board: Board }) {
                     value={f.type}
                     onValueChange={(v) =>
                       setFields((p) =>
-                        p.map((x) => (x.id === f.id ? { ...x, type: v as FieldType } : x)),
+                        p.map((x) =>
+                          x.id === f.id ? { ...x, type: v as FieldType } : x,
+                        ),
                       )
                     }
                   >
@@ -665,7 +755,12 @@ function BoardSection({ board }: { board: Board }) {
                         setFields((p) =>
                           p.map((x) =>
                             x.id === f.id
-                              ? { ...x, options: e.target.value.split(",").map((o) => o.trimStart()) }
+                              ? {
+                                  ...x,
+                                  options: e.target.value
+                                    .split(",")
+                                    .map((o) => o.trimStart()),
+                                }
                               : x,
                           ),
                         )
@@ -683,7 +778,10 @@ function BoardSection({ board }: { board: Board }) {
           variant="outline"
           size="sm"
           onClick={() =>
-            setFields((p) => [...p, { id: crypto.randomUUID(), name: "New field", type: "text" }])
+            setFields((p) => [
+              ...p,
+              { id: crypto.randomUUID(), name: "New field", type: "text" },
+            ])
           }
         >
           <Plus className="mr-1.5 h-4 w-4" />
@@ -706,12 +804,15 @@ function BoardSection({ board }: { board: Board }) {
         onOpenChange={(o) => {
           if (!o) setDeletingField(null);
         }}
-        title={deletingField ? `Delete “${deletingField.name}”?` : "Delete field"}
+        title={
+          deletingField ? `Delete “${deletingField.name}”?` : "Delete field"
+        }
         description={`This field is removed from your board. Saved values stay in the database but are hidden from your ${noun.lowerPlural} — click Save to apply.`}
         confirmLabel="Remove field"
         destructive
         onConfirm={() => {
-          if (deletingField) setFields((p) => p.filter((x) => x.id !== deletingField.id));
+          if (deletingField)
+            setFields((p) => p.filter((x) => x.id !== deletingField.id));
         }}
       />
 
@@ -741,7 +842,10 @@ export default function SettingsPage() {
 
   return (
     <div className="flex h-full flex-col">
-      <PageHeader title="Settings" description="Manage your account and boards." />
+      <PageHeader
+        title="Settings"
+        description="Manage your account and boards."
+      />
       <div className="p-4 sm:p-6">
         <Tabs defaultValue="board" className="max-w-3xl">
           <TabsList>

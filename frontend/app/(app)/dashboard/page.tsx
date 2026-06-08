@@ -2,6 +2,7 @@
 
 import { PageHeader } from "@/components/app/page-header";
 import { useActiveBoard } from "@/components/board-provider";
+import { ItemDetailSheet } from "@/components/items/item-detail-sheet";
 import { Funnel } from "@/components/dashboard/funnel";
 import { StatCards } from "@/components/dashboard/stat-cards";
 import { WeeklyChart } from "@/components/dashboard/weekly-chart";
@@ -11,9 +12,10 @@ import { useDashboard } from "@/hooks/use-dashboard";
 import { useUpdateReminder } from "@/hooks/use-reminders";
 import { itemNoun } from "@/lib/board-utils";
 import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
-import type { Activity, Reminder, Stage } from "@/lib/types";
+import type { Activity, Board, Reminder, Stage } from "@/lib/types";
 import { ArrowRight, Bell, Briefcase, Pencil, Plus, Sparkles, StickyNote } from "lucide-react";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 
 function refTitle(ref: Activity["itemId"] | Reminder["itemId"]): string {
   return typeof ref === "object" && ref ? ref.title : "Item";
@@ -69,10 +71,21 @@ function ActivityLine({ a, stages }: { a: Activity; stages: Stage[] }) {
 }
 
 export default function DashboardPage() {
-  const { activeBoard, activeBoardId } = useActiveBoard();
+  const { activeBoard, activeBoardId, boards, setActiveBoardId } = useActiveBoard();
   const { data, isLoading } = useDashboard(activeBoardId ?? undefined);
   const updateReminder = useUpdateReminder();
   const noun = itemNoun(activeBoard);
+
+  const boardById = useMemo(() => new Map(boards.map((b) => [b._id, b])), [boards]);
+  const [selected, setSelected] = useState<{ itemId: string; board: Board } | null>(null);
+
+  function openReminder(r: Reminder) {
+    const item = typeof r.itemId === "object" && r.itemId ? r.itemId : null;
+    const board = item?.boardId ? boardById.get(item.boardId) : undefined;
+    if (!item?._id || !board) return;
+    setActiveBoardId(board._id);
+    setSelected({ itemId: item._id, board });
+  }
 
   return (
     <div className="flex h-full flex-col">
@@ -141,33 +154,57 @@ export default function DashboardPage() {
                   </p>
                 ) : (
                   <ul className="space-y-2">
-                    {data.reminders.map((r) => (
-                      <li key={r._id} className="flex items-center gap-3 rounded-lg border p-3">
-                        <input
-                          type="checkbox"
-                          checked={r.done}
-                          onChange={(e) =>
-                            updateReminder.mutate({ id: r._id, data: { done: e.target.checked } })
-                          }
-                          className="h-4 w-4 accent-primary"
-                        />
-                        <div className="min-w-0 flex-1">
-                          <p className="truncate text-sm font-medium">{refTitle(r.itemId)}</p>
-                          {r.note && (
-                            <p className="truncate text-xs text-muted-foreground">{r.note}</p>
-                          )}
-                        </div>
-                        <span
-                          className={
-                            isOverdue(r.dueDate)
-                              ? "shrink-0 text-xs font-medium text-destructive"
-                              : "shrink-0 text-xs text-muted-foreground"
-                          }
-                        >
-                          {fmtDate(r.dueDate)}
-                        </span>
-                      </li>
-                    ))}
+                    {data.reminders.map((r) => {
+                      const item =
+                        typeof r.itemId === "object" && r.itemId ? r.itemId : null;
+                      const board = item?.boardId ? boardById.get(item.boardId) : undefined;
+                      const canOpen = !!item?._id && !!board;
+                      return (
+                        <li key={r._id} className="flex items-center gap-3 rounded-lg border p-3">
+                          <input
+                            type="checkbox"
+                            checked={r.done}
+                            onChange={(e) =>
+                              updateReminder.mutate({ id: r._id, data: { done: e.target.checked } })
+                            }
+                            className="h-4 w-4 shrink-0 accent-primary"
+                          />
+                          <button
+                            type="button"
+                            disabled={!canOpen}
+                            onClick={() => openReminder(r)}
+                            className="group min-w-0 flex-1 text-left disabled:cursor-default"
+                          >
+                            <p
+                              className={`truncate text-sm font-medium ${canOpen ? "group-hover:underline" : ""}`}
+                            >
+                              {refTitle(r.itemId)}
+                            </p>
+                            <div className="mt-0.5 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
+                              {board && (
+                                <span className="inline-flex shrink-0 items-center gap-1">
+                                  <span
+                                    className="h-2 w-2 rounded-full"
+                                    style={{ backgroundColor: board.color }}
+                                  />
+                                  {board.name}
+                                </span>
+                              )}
+                              {r.note && <span className="truncate">· {r.note}</span>}
+                            </div>
+                          </button>
+                          <span
+                            className={
+                              isOverdue(r.dueDate)
+                                ? "shrink-0 text-xs font-medium text-destructive"
+                                : "shrink-0 text-xs text-muted-foreground"
+                            }
+                          >
+                            {fmtDate(r.dueDate)}
+                          </span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -189,6 +226,17 @@ export default function DashboardPage() {
           </>
         )}
       </div>
+
+      {selected && (
+        <ItemDetailSheet
+          board={selected.board}
+          itemId={selected.itemId}
+          open={!!selected}
+          onOpenChange={(o) => {
+            if (!o) setSelected(null);
+          }}
+        />
+      )}
     </div>
   );
 }
