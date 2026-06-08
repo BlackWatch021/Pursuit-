@@ -84,7 +84,7 @@ router.get(
     const reminders = await Reminder.find({ userId, done: false })
       .sort({ dueDate: 1 })
       .limit(6)
-      .populate('itemId', 'title');
+      .populate('itemId', 'title boardId');
 
     const recent = await Activity.find({ userId })
       .sort({ createdAt: -1 })

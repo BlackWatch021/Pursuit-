@@ -73,6 +73,7 @@ export type ActivityType = "created" | "note" | "stage_change" | "field_change" 
 export interface ItemRef {
   _id: string;
   title: string;
+  boardId?: string;
 }
 
 export interface Activity {
