@@ -9,10 +9,22 @@ import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import { useMemo, useState } from "react";
 
 const PRIORITY_RANK: Record<Priority, number> = { low: 0, medium: 1, high: 2 };
-const PRIORITY_META: Record<Priority, { label: string; dot: string }> = {
-  high: { label: "High", dot: "bg-amber-500" },
-  medium: { label: "Medium", dot: "bg-sky-500" },
-  low: { label: "Low", dot: "bg-zinc-400" },
+const PRIORITY_META: Record<Priority, { label: string; pill: string; dot: string }> = {
+  high: {
+    label: "High",
+    pill: "bg-red-500/15 text-red-600 dark:text-red-400",
+    dot: "bg-red-500",
+  },
+  medium: {
+    label: "Medium",
+    pill: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  low: {
+    label: "Low",
+    pill: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
+    dot: "bg-emerald-500",
+  },
 };
 
 type SortKey = string;
@@ -238,8 +250,13 @@ export function BoardTable({
                 </td>
                 {board.showPriority && (
                   <td className="whitespace-nowrap border-b px-3 py-2">
-                    <span className="inline-flex items-center gap-1.5">
-                      <span className={cn("h-2 w-2 rounded-full", pri.dot)} />
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1.5 rounded px-1.5 py-0.5 text-xs font-medium",
+                        pri.pill,
+                      )}
+                    >
+                      <span className={cn("h-1.5 w-1.5 rounded-full", pri.dot)} />
                       {pri.label}
                     </span>
                   </td>

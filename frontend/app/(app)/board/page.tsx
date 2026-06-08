@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { useActiveBoard } from "@/components/board-provider";
 import { BoardFilters } from "@/components/board/board-filters";
 import { BoardTable } from "@/components/board/board-table";
+import { ExportMenu } from "@/components/board/export-menu";
 import { KanbanBoard } from "@/components/board/kanban-board";
 import { NewItemDialog } from "@/components/board/new-item-dialog";
 import { ItemDetailSheet } from "@/components/items/item-detail-sheet";
@@ -132,25 +133,28 @@ export default function BoardPage() {
         showTags={showTags}
         showPriority={showPriority}
       >
-        <div className="inline-flex rounded-lg border p-0.5">
-          <Button
-            variant={view === "board" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setView("board")}
-          >
-            <LayoutGrid className="mr-1.5 h-4 w-4" />
-            Board
-          </Button>
-          <Button
-            variant={view === "table" ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7"
-            onClick={() => setView("table")}
-          >
-            <TableIcon className="mr-1.5 h-4 w-4" />
-            Table
-          </Button>
+        <div className="flex items-center gap-2">
+          <ExportMenu board={board} items={filtered} />
+          <div className="inline-flex rounded-lg border p-0.5">
+            <Button
+              variant={view === "board" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setView("board")}
+            >
+              <LayoutGrid className="mr-1.5 h-4 w-4" />
+              Board
+            </Button>
+            <Button
+              variant={view === "table" ? "secondary" : "ghost"}
+              size="sm"
+              className="h-7"
+              onClick={() => setView("table")}
+            >
+              <TableIcon className="mr-1.5 h-4 w-4" />
+              Table
+            </Button>
+          </div>
         </div>
       </BoardFilters>
 
