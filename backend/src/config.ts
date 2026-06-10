@@ -25,6 +25,9 @@ export const config = {
   // first run never floods the inbox with ancient overdue reminders.
   reminderCheckMinutes: Number(process.env.REMINDER_CHECK_MINUTES) || 15,
   reminderLookbackDays: Number(process.env.REMINDER_LOOKBACK_DAYS) || 3,
+  // Shared secret for the external cron trigger (POST /api/internal/run-reminders).
+  // When unset, that endpoint is disabled (returns 503).
+  cronSecret: process.env.CRON_SECRET || '',
 };
 
 if (!process.env.JWT_SECRET) {
