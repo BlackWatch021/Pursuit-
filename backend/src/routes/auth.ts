@@ -152,6 +152,7 @@ router.patch(
     if (!user) throw new HttpError(401, 'Not authenticated');
     if (data.name !== undefined) user.name = data.name;
     if (data.image !== undefined) user.image = data.image || undefined;
+    if (data.emailReminders !== undefined) user.emailReminders = data.emailReminders;
     await user.save();
     res.json({ user: user.toJSON() });
   }),

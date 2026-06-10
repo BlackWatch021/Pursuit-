@@ -2,6 +2,7 @@
 
 import { AppSidebar } from "@/components/app/app-sidebar";
 import { BoardProvider } from "@/components/board-provider";
+import { ReminderWatcher } from "@/components/reminder-watcher";
 import { Logo } from "@/components/brand/logo";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
@@ -29,6 +30,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <BoardProvider>
+      <ReminderWatcher />
       <div className="flex h-svh overflow-hidden">
         <aside className="hidden h-svh w-60 shrink-0 border-r bg-card lg:block">
           <AppSidebar />

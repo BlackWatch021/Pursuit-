@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useDashboard } from "@/hooks/use-dashboard";
 import { useUpdateReminder } from "@/hooks/use-reminders";
 import { itemNoun } from "@/lib/board-utils";
-import { fmtDate, fmtRelative, isOverdue } from "@/lib/format";
+import { fmtDateTime, fmtRelative, isOverdue } from "@/lib/format";
 import type { Activity, Board, Reminder, Stage } from "@/lib/types";
 import { ArrowRight, Bell, Briefcase, Pencil, Plus, Sparkles, StickyNote } from "lucide-react";
 import Link from "next/link";
@@ -200,7 +200,7 @@ export default function DashboardPage() {
                                 : "shrink-0 text-xs text-muted-foreground"
                             }
                           >
-                            {fmtDate(r.dueDate)}
+                            {fmtDateTime(r.dueDate)}
                           </span>
                         </li>
                       );

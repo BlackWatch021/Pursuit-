@@ -53,6 +53,7 @@ function ProfileSection() {
 
   const [name, setName] = useState("");
   const [image, setImage] = useState("");
+  const [emailReminders, setEmailReminders] = useState(true);
   const [email, setEmail] = useState("");
   const [emailPassword, setEmailPassword] = useState("");
   const [curPw, setCurPw] = useState("");
@@ -67,6 +68,7 @@ function ProfileSection() {
     setSynced(user);
     setName(user.name);
     setImage(user.image ?? "");
+    setEmailReminders(user.emailReminders ?? true);
     setEmail(user.email);
   }
 
@@ -89,6 +91,20 @@ function ProfileSection() {
           toast.error(
             e instanceof ApiError ? e.message : "Couldn't update profile",
           ),
+      },
+    );
+  }
+
+  function toggleEmailReminders(next: boolean) {
+    setEmailReminders(next); // optimistic
+    updateProfile.mutate(
+      { emailReminders: next },
+      {
+        onSuccess: () => toast.success(next ? "Email reminders on" : "Email reminders off"),
+        onError: (e) => {
+          setEmailReminders(!next); // revert
+          toast.error(e instanceof ApiError ? e.message : "Couldn't update preference");
+        },
       },
     );
   }
@@ -176,6 +192,23 @@ function ProfileSection() {
           >
             Save
           </Button>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="rounded-xl border bg-card p-5">
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label>Email reminders</Label>
+            <p className="text-xs text-muted-foreground">
+              Email me when a follow-up reminder is due, across every board.
+            </p>
+          </div>
+          <Switch
+            checked={emailReminders}
+            onCheckedChange={toggleEmailReminders}
+            disabled={updateProfile.isPending}
+          />
         </div>
       </div>
 

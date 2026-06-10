@@ -35,6 +35,32 @@ export async function sendMail(opts: { to: string; subject: string; text: string
   });
 }
 
+export function reminderEmail(opts: {
+  itemTitle: string;
+  boardName: string;
+  note?: string;
+  dueDate: Date;
+  url: string;
+}) {
+  const due = new Date(opts.dueDate).toISOString().slice(0, 10);
+  const subject = `Reminder due: ${opts.itemTitle}`;
+  const noteLine = opts.note ? `\nNote: ${opts.note}` : '';
+  const text = `You have a follow-up due for "${opts.itemTitle}" on your "${opts.boardName}" board (due ${due}).${noteLine}\n\nOpen Pursuit: ${opts.url}`;
+  const html = `
+    <div style="font-family: system-ui, sans-serif; max-width: 480px;">
+      <h2 style="margin:0 0 8px;">Follow-up due</h2>
+      <p style="color:#52525b; margin:0 0 4px;">
+        <strong>${opts.itemTitle}</strong> — ${opts.boardName}
+      </p>
+      <p style="color:#71717a; font-size:13px; margin:0 0 12px;">Due ${due}</p>
+      ${opts.note ? `<p style="color:#52525b;">${opts.note}</p>` : ''}
+      <p style="margin:16px 0 0;">
+        <a href="${opts.url}" style="color:#4f46e5;">Open in Pursuit →</a>
+      </p>
+    </div>`;
+  return { subject, text, html };
+}
+
 export function passwordResetEmail(otp: string) {
   const subject = 'Your Pursuit password reset code';
   const text = `Your password reset code is ${otp}. It expires in ${config.otpTtlMinutes} minutes. If you didn't request this, you can ignore this email.`;

@@ -6,6 +6,8 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true },
     image: { type: String },
+    // Email me when a follow-up reminder is due (any board). Opt-out via Settings.
+    emailReminders: { type: Boolean, default: true },
     // Password-reset OTP (hashed). Cleared once used or expired.
     resetOtpHash: { type: String },
     resetOtpExpires: { type: Date },

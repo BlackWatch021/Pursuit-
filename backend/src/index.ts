@@ -10,9 +10,11 @@ import boardsRouter from './routes/boards';
 import dashboardRouter from './routes/dashboard';
 import itemsRouter from './routes/items';
 import remindersRouter from './routes/reminders';
+import { startReminderNotifier } from './utils/reminderNotifier';
 
 async function main() {
   await connectDB();
+  startReminderNotifier();
 
   const app = express();
   // Behind a hosting proxy (Render/Railway/etc.) so req.ip is the real client

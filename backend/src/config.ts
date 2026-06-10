@@ -21,6 +21,10 @@ export const config = {
     from: process.env.EMAIL_FROM || 'Pursuit <no-reply@pursuit.app>',
   },
   otpTtlMinutes: 10,
+  // Email-reminder scheduler: how often to check, and how far back to look so a
+  // first run never floods the inbox with ancient overdue reminders.
+  reminderCheckMinutes: Number(process.env.REMINDER_CHECK_MINUTES) || 15,
+  reminderLookbackDays: Number(process.env.REMINDER_LOOKBACK_DAYS) || 3,
 };
 
 if (!process.env.JWT_SECRET) {

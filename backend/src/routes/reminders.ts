@@ -32,6 +32,7 @@ router.post(
       userId: req.userId,
       dueDate: data.dueDate,
       note: data.note ?? '',
+      leadMinutes: data.leadMinutes ?? 0,
     });
     res.status(201).json({ reminder });
   }),
@@ -41,12 +42,15 @@ router.patch(
   '/:id',
   asyncHandler(async (req, res) => {
     const data = updateReminderSchema.parse(req.body);
-    const reminder = await Reminder.findOneAndUpdate(
-      { _id: req.params.id, userId: req.userId },
-      data,
-      { new: true },
-    );
+    // Load + save (not findOneAndUpdate) so the pre-save hook recomputes notifyAt
+    // when the due date or lead time changes.
+    const reminder = await Reminder.findOne({ _id: req.params.id, userId: req.userId });
     if (!reminder) throw new HttpError(404, 'Reminder not found');
+    if (data.dueDate !== undefined) reminder.dueDate = data.dueDate;
+    if (data.note !== undefined) reminder.note = data.note;
+    if (data.done !== undefined) reminder.done = data.done;
+    if (data.leadMinutes !== undefined) reminder.leadMinutes = data.leadMinutes;
+    await reminder.save();
     res.json({ reminder });
   }),
 );
