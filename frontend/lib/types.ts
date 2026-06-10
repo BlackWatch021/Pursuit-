@@ -4,6 +4,7 @@ export interface User {
   name: string;
   email: string;
   image?: string;
+  emailReminders?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,6 +97,8 @@ export interface Reminder {
   dueDate: string;
   note: string;
   done: boolean;
+  leadMinutes?: number;
+  notifyAt?: string;
   createdAt: string;
   updatedAt: string;
 }

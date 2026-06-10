@@ -30,7 +30,16 @@ import {
   useUpdateReminder,
 } from "@/hooks/use-reminders";
 import { itemNoun, sortedStages, stageMap } from "@/lib/board-utils";
-import { dateOnlyToISO, fmtDate, fmtRelative, isOverdue } from "@/lib/format";
+import {
+  dateOnlyToISO,
+  fmtDate,
+  fmtDateTime,
+  fmtRelative,
+  isOverdue,
+  localDateTimeToISO,
+  nowTimeOnly,
+  todayDateOnly,
+} from "@/lib/format";
 import type { Activity, Board, Item, Priority } from "@/lib/types";
 import { ArrowRight, Bell, Pencil, Plus, Sparkles, StickyNote, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -519,12 +528,31 @@ function ActivityTab({ itemId, board }: { itemId: string; board: Board }) {
   );
 }
 
+const LEAD_OPTIONS: { value: number; label: string }[] = [
+  { value: 0, label: "At time of reminder" },
+  { value: 60, label: "1 hour before" },
+  { value: 180, label: "3 hours before" },
+  { value: 360, label: "6 hours before" },
+  { value: 720, label: "12 hours before" },
+  { value: 1440, label: "1 day before" },
+];
+
+/** Short "email me" badge for a saved reminder ("1h before", "1d before"). */
+function leadShort(minutes?: number): string | null {
+  if (!minutes) return null;
+  if (minutes % 1440 === 0) return `${minutes / 1440}d before`;
+  return `${Math.round(minutes / 60)}h before`;
+}
+
 function RemindersTab({ itemId }: { itemId: string }) {
   const { data, isLoading } = useItemReminders(itemId);
   const create = useCreateReminder();
   const updateR = useUpdateReminder();
   const delR = useDeleteReminder();
-  const [due, setDue] = useState("");
+  // Default date + time to right now, so adding a quick reminder is one click.
+  const [due, setDue] = useState(todayDateOnly);
+  const [time, setTime] = useState(nowTimeOnly);
+  const [lead, setLead] = useState(0);
   const [note, setNote] = useState("");
 
   async function add() {
@@ -532,8 +560,12 @@ function RemindersTab({ itemId }: { itemId: string }) {
       toast.error("Pick a due date");
       return;
     }
-    await create.mutateAsync({ itemId, dueDate: dateOnlyToISO(due), note });
-    setDue("");
+    // Build a real timestamp from the picked date + time so the email fires then.
+    const dueDate = localDateTimeToISO(due, time || nowTimeOnly());
+    await create.mutateAsync({ itemId, dueDate, note, leadMinutes: lead });
+    setDue(todayDateOnly());
+    setTime(nowTimeOnly());
+    setLead(0);
     setNote("");
   }
 
@@ -541,11 +573,37 @@ function RemindersTab({ itemId }: { itemId: string }) {
     <div className="space-y-4">
       <div className="space-y-2 rounded-lg border p-3">
         <div className="flex gap-2">
-          <Input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="h-9" />
+          <Input
+            type="date"
+            value={due}
+            onChange={(e) => setDue(e.target.value)}
+            className="h-9 flex-1"
+          />
+          <Input
+            type="time"
+            value={time}
+            onChange={(e) => setTime(e.target.value)}
+            className="h-9 flex-1"
+          />
           <Button size="sm" onClick={add} disabled={create.isPending}>
             <Plus className="mr-1 h-4 w-4" />
             Add
           </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-xs text-muted-foreground">Email me</span>
+          <Select value={String(lead)} onValueChange={(v) => setLead(Number(v))}>
+            <SelectTrigger className="h-9 flex-1">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {LEAD_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={String(o.value)}>
+                  {o.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
         <Input
           value={note}
@@ -578,7 +636,10 @@ function RemindersTab({ itemId }: { itemId: string }) {
                       : "text-xs text-muted-foreground"
                   }
                 >
-                  {fmtDate(r.dueDate)}
+                  {fmtDateTime(r.dueDate)}
+                  {leadShort(r.leadMinutes) && (
+                    <span className="text-muted-foreground"> · email {leadShort(r.leadMinutes)}</span>
+                  )}
                 </p>
               </div>
               <Button

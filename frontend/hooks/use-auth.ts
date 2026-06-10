@@ -45,7 +45,7 @@ export function useLogout() {
 export function useUpdateProfile() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { name?: string; image?: string }) =>
+    mutationFn: (input: { name?: string; image?: string; emailReminders?: boolean }) =>
       api.patch<{ user: User }>("/api/auth/me", input),
     onSuccess: (data) => qc.setQueryData(["me"], data),
   });

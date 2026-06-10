@@ -6,7 +6,7 @@ import { ItemDetailSheet } from "@/components/items/item-detail-sheet";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDeleteReminder, useReminders, useUpdateReminder } from "@/hooks/use-reminders";
-import { fmtDate, isOverdue, isToday } from "@/lib/format";
+import { fmtDateTime, isOverdue, isToday } from "@/lib/format";
 import type { Board, Reminder } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { BellOff, Trash2 } from "lucide-react";
@@ -74,7 +74,7 @@ function ReminderRow({
           overdue ? "font-medium text-destructive" : "text-muted-foreground",
         )}
       >
-        {fmtDate(r.dueDate)}
+        {fmtDateTime(r.dueDate)}
       </span>
       <Button
         variant="ghost"

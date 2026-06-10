@@ -16,6 +16,7 @@ export const loginSchema = z.object({
 export const updateProfileSchema = z.object({
   name: z.string().min(1).max(80).optional(),
   image: z.string().max(1000).optional(),
+  emailReminders: z.boolean().optional(),
 });
 
 export const updateEmailSchema = z.object({
@@ -125,10 +126,12 @@ export const createReminderSchema = z.object({
   itemId: z.string(),
   dueDate: z.coerce.date(),
   note: z.string().optional(),
+  leadMinutes: z.number().int().min(0).max(43200).optional(), // up to 30 days
 });
 
 export const updateReminderSchema = z.object({
   dueDate: z.coerce.date().optional(),
   note: z.string().optional(),
   done: z.boolean().optional(),
+  leadMinutes: z.number().int().min(0).max(43200).optional(),
 });

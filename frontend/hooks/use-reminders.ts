@@ -10,10 +10,11 @@ function invalidateAll(qc: QueryClient) {
   qc.invalidateQueries({ queryKey: ["calendar"] });
 }
 
-export function useReminders(scope?: "open") {
+export function useReminders(scope?: "open", options?: { refetchInterval?: number }) {
   return useQuery({
     queryKey: ["reminders", scope ?? "all"],
     queryFn: () => api.get<{ reminders: Reminder[] }>(`/api/reminders${scope ? `?scope=${scope}` : ""}`),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
@@ -28,7 +29,7 @@ export function useItemReminders(itemId: string | null) {
 export function useCreateReminder() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (input: { itemId: string; dueDate: string; note?: string }) =>
+    mutationFn: (input: { itemId: string; dueDate: string; note?: string; leadMinutes?: number }) =>
       api.post<{ reminder: Reminder }>("/api/reminders", input),
     onSuccess: () => invalidateAll(qc),
   });
