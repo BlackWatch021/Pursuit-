@@ -1,5 +1,13 @@
-import { redirect } from "next/navigation";
+"use client";
 
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+// Client-side redirect so this works on a static host (no server to issue a 307).
 export default function Home() {
-  redirect("/dashboard");
+  const router = useRouter();
+  useEffect(() => {
+    router.replace("/dashboard");
+  }, [router]);
+  return null;
 }
