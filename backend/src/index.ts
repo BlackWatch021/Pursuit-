@@ -4,13 +4,14 @@ import express from 'express';
 import { config } from './config';
 import { connectDB } from './db';
 import { requireAuth } from './middleware/auth';
-import { errorHandler, notFound } from './middleware/error';
+import { errorHandler, HttpError, notFound } from './middleware/error';
 import authRouter from './routes/auth';
 import boardsRouter from './routes/boards';
 import dashboardRouter from './routes/dashboard';
 import itemsRouter from './routes/items';
 import remindersRouter from './routes/reminders';
-import { startReminderNotifier } from './utils/reminderNotifier';
+import { asyncHandler } from './utils/asyncHandler';
+import { runReminderCheck, startReminderNotifier } from './utils/reminderNotifier';
 
 async function main() {
   await connectDB();
@@ -25,6 +26,24 @@ async function main() {
   app.use(cookieParser());
 
   app.get('/health', (_req, res) => res.json({ ok: true }));
+
+  // External cron trigger — lets a free scheduler (cron-job.org, etc.) run the
+  // due-reminder check on hosts that sleep when idle. Guarded by CRON_SECRET;
+  // disabled (503) when that env var is unset. Accepts the secret via the
+  // `x-cron-secret` header, an `Authorization: Bearer` header, or a `?key=` query.
+  app.post(
+    '/api/internal/run-reminders',
+    asyncHandler(async (req, res) => {
+      if (!config.cronSecret) throw new HttpError(503, 'Cron endpoint disabled (set CRON_SECRET)');
+      const provided =
+        req.get('x-cron-secret') ||
+        req.get('authorization')?.replace(/^Bearer\s+/i, '') ||
+        (req.query.key as string | undefined);
+      if (provided !== config.cronSecret) throw new HttpError(401, 'Unauthorized');
+      const sent = await runReminderCheck();
+      res.json({ ok: true, sent });
+    }),
+  );
 
   app.use('/api/auth', authRouter);
   app.use('/api/boards', requireAuth, boardsRouter);
